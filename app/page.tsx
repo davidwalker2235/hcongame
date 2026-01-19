@@ -1,13 +1,48 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./components/page.module.css";
 import { Logo } from "./components/Logo";
+import { useFirebaseDatabase } from "./hooks/useFirebaseDatabase";
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const id = searchParams.get('id');
+  const { read, write, loading } = useFirebaseDatabase();
+  
   const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [userExists, setUserExists] = useState<boolean | null>(null);
+  const [registering, setRegistering] = useState(false);
+
+  // Verificar si el usuario existe cuando se carga la página
+  useEffect(() => {
+    const checkUser = async () => {
+      if (!id) {
+        router.push('/wrong-access');
+        return;
+      }
+
+      try {
+        const userData = await read(`users/${id}`);
+        if (userData) {
+          // Usuario existe, redirigir a about
+          router.push(`/about?id=${id}`);
+        } else {
+          // Usuario no existe, mostrar formulario
+          setUserExists(false);
+        }
+      } catch (error) {
+        console.error('Error checking user:', error);
+        setUserExists(false);
+      }
+    };
+
+    checkUser();
+  }, [id, read, router]);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -23,7 +58,46 @@ export default function Home() {
     }
   };
 
+  const handleRegister = async () => {
+    if (!id || !isFormValid) return;
+
+    setRegistering(true);
+    try {
+      await write(`users/${id}`, {
+        nickname: nickname.trim(),
+        email: email.trim(),
+      });
+      // Redirigir a about después del registro
+      router.push(`/about?id=${id}`);
+    } catch (error) {
+      console.error('Error registering user:', error);
+      setEmailError('Error registering. Please try again.');
+    } finally {
+      setRegistering(false);
+    }
+  };
+
   const isFormValid = nickname.trim() !== '' && email.trim() !== '' && !emailError;
+
+  // Mostrar loading mientras se verifica el usuario
+  if (userExists === null || loading) {
+    return (
+      <div className={styles.container}>
+        <main className={styles.main}>
+          <div className={styles.content}>
+            <p className={styles.text} style={{ textAlign: 'center' }}>
+              Loading...
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Si el usuario existe, no deberíamos llegar aquí (se redirige), pero por si acaso
+  if (userExists) {
+    return null;
+  }
 
   return (
     <div className={styles.container}>
@@ -46,6 +120,7 @@ export default function Home() {
                 onChange={(e) => setNickname(e.target.value)}
                 className={styles.input}
                 placeholder="Enter your nickname"
+                disabled={registering}
               />
             </div>
 
@@ -58,6 +133,7 @@ export default function Home() {
                 onChange={(e) => handleEmailChange(e.target.value)}
                 className={`${styles.input} ${emailError ? styles.inputError : ''}`}
                 placeholder="Enter your email"
+                disabled={registering}
               />
               {emailError && <span className={styles.errorMessage}>{emailError}</span>}
             </div>
@@ -65,10 +141,11 @@ export default function Home() {
             <div className={styles.buttonGroup}>
               <button
                 type="button"
-                className={`${styles.button} ${isFormValid ? styles.buttonActive : styles.buttonDisabled}`}
-                disabled={!isFormValid}
+                onClick={handleRegister}
+                className={`${styles.button} ${isFormValid && !registering ? styles.buttonActive : styles.buttonDisabled}`}
+                disabled={!isFormValid || registering}
               >
-                [Register]
+                {registering ? '[Registering...]' : '[Register]'}
               </button>
             </div>
 

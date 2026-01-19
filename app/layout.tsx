@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import Navigation from "./components/Navigation";
+import LayoutWrapper from "./components/LayoutWrapper";
 
 export const metadata: Metadata = {
   title: "ERNI Challenge",
@@ -22,8 +22,9 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        <Navigation />
-        {children}
+        <LayoutWrapper>
+          {children}
+        </LayoutWrapper>
       </body>
     </html>
   );
