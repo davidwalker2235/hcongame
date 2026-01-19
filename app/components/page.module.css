@@ -30,6 +30,101 @@
   overflow-wrap: break-word;
 }
 
+.form {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  color: #00ff00;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+}
+
+.input {
+  background-color: #0d1117;
+  border: 1px solid #00ff00;
+  color: #00ff00;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input:focus {
+  border-color: #00ff00;
+  box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+}
+
+.input::placeholder {
+  color: #00cc00;
+  opacity: 0.6;
+}
+
+.inputError {
+  border-color: #ff4444;
+}
+
+.errorMessage {
+  color: #ff4444;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.buttonGroup {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.button {
+  background-color: transparent;
+  border: none;
+  color: #00cc00;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px 16px;
+  transition: color 0.2s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.buttonActive {
+  color: #00ff00;
+  cursor: pointer;
+}
+
+.buttonActive:hover {
+  color: #00ff88;
+}
+
+.buttonDisabled {
+  color: #666666;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.terms {
+  color: #888888;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  margin-top: 20px;
+  text-align: center;
+  line-height: 1.5;
+}
+
 @media (max-width: 768px) {
   .container {
     font-size: 13px;
