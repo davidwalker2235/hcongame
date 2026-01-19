@@ -2,17 +2,15 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const { pathname, searchParams } = request.nextUrl;
-  const id = searchParams.get('id');
+  const { pathname } = request.nextUrl;
 
-  // Rutas que no requieren ID
+  // Rutas que no requieren verificación
   const publicPaths = ['/wrong-access'];
   
-  // Si no es una ruta pública y no hay ID, redirigir a wrong-access
-  if (!publicPaths.includes(pathname) && !id) {
-    return NextResponse.redirect(new URL('/wrong-access', request.url));
-  }
-
+  // El middleware ya no puede verificar sessionStorage (es del cliente)
+  // La verificación se hace en el cliente con useUserVerification
+  // Solo permitimos el acceso a rutas públicas sin verificación
+  
   return NextResponse.next();
 }
 

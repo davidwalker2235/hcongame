@@ -1,21 +1,20 @@
 'use client';
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Navigation from "./Navigation";
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [showNavigation, setShowNavigation] = useState(true);
 
   useEffect(() => {
-    // Ocultar navegación en página principal, wrong-access y cuando no hay ID
+    // Ocultar navegación en página principal y wrong-access
     const hideNavPaths = ['/', '/wrong-access'];
-    const id = searchParams.get('id');
-    const shouldHide = hideNavPaths.includes(pathname) || !id;
+    const sessionId = typeof window !== 'undefined' ? sessionStorage.getItem('user_session_id') : null;
+    const shouldHide = hideNavPaths.includes(pathname) || !sessionId;
     setShowNavigation(!shouldHide);
-  }, [pathname, searchParams]);
+  }, [pathname]);
 
   return (
     <>

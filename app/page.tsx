@@ -1,15 +1,15 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import styles from "./components/page.module.css";
 import { Logo } from "./components/Logo";
 import { useFirebaseDatabase } from "./hooks/useFirebaseDatabase";
+import { useSessionId } from "./hooks/useSessionId";
 
 export default function Home() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const id = searchParams.get('id');
+  const { sessionId, isInitialized } = useSessionId();
   const { read, write, loading } = useFirebaseDatabase();
   
   const [nickname, setNickname] = useState('');
@@ -20,17 +20,19 @@ export default function Home() {
 
   // Verificar si el usuario existe cuando se carga la página
   useEffect(() => {
+    if (!isInitialized) return;
+
     const checkUser = async () => {
-      if (!id) {
+      if (!sessionId) {
         router.push('/wrong-access');
         return;
       }
 
       try {
-        const userData = await read(`users/${id}`);
+        const userData = await read(`users/${sessionId}`);
         if (userData) {
           // Usuario existe, redirigir a about
-          router.push(`/about?id=${id}`);
+          router.push('/about');
         } else {
           // Usuario no existe, mostrar formulario
           setUserExists(false);
@@ -42,7 +44,7 @@ export default function Home() {
     };
 
     checkUser();
-  }, [id, read, router]);
+  }, [sessionId, isInitialized, read, router]);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -59,16 +61,16 @@ export default function Home() {
   };
 
   const handleRegister = async () => {
-    if (!id || !isFormValid) return;
+    if (!sessionId || !isFormValid) return;
 
     setRegistering(true);
     try {
-      await write(`users/${id}`, {
+      await write(`users/${sessionId}`, {
         nickname: nickname.trim(),
         email: email.trim(),
       });
       // Redirigir a about después del registro
-      router.push(`/about?id=${id}`);
+      router.push('/about');
     } catch (error) {
       console.error('Error registering user:', error);
       setEmailError('Error registering. Please try again.');
@@ -80,7 +82,7 @@ export default function Home() {
   const isFormValid = nickname.trim() !== '' && email.trim() !== '' && !emailError;
 
   // Mostrar loading mientras se verifica el usuario
-  if (userExists === null || loading) {
+  if (userExists === null || loading || !isInitialized) {
     return (
       <div className={styles.container}>
         <main className={styles.main}>

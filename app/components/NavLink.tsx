@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 export default function NavLink({ 
   href, 
@@ -13,16 +13,12 @@ export default function NavLink({
   onClick?: () => void;
 }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const id = searchParams.get('id');
   const isActive = pathname === href;
 
-  // Incluir el ID en la URL si existe
-  const hrefWithId = id ? `${href}?id=${id}` : href;
-
+  // Ya no incluimos el ID en la URL
   return (
     <Link 
-      href={hrefWithId}
+      href={href}
       onClick={onClick}
       style={{
         color: isActive ? "#00ff00" : "#00cc00",

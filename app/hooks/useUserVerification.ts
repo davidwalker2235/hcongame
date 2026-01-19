@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useFirebaseDatabase } from './useFirebaseDatabase';
+import { useSessionId } from './useSessionId';
 
 export const useUserVerification = () => {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const id = searchParams.get('id');
+  const { sessionId, isInitialized } = useSessionId();
   const { read, loading } = useFirebaseDatabase();
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [userData, setUserData] = useState<any>(null);
@@ -15,11 +15,14 @@ export const useUserVerification = () => {
   const isVerifyingRef = useRef(false);
 
   useEffect(() => {
+    // Esperar a que el ID de sesión esté inicializado
+    if (!isInitialized) return;
+
     // Resetear estado cuando cambia el ID
-    if (previousIdRef.current !== id) {
+    if (previousIdRef.current !== sessionId) {
       setIsVerified(null);
       setUserData(null);
-      previousIdRef.current = id;
+      previousIdRef.current = sessionId;
     }
 
     const verifyUser = async () => {
@@ -27,7 +30,7 @@ export const useUserVerification = () => {
       if (isVerifyingRef.current) return;
       
       // Si no hay ID, redirigir a wrong-access
-      if (!id) {
+      if (!sessionId) {
         router.push('/wrong-access');
         return;
       }
@@ -35,10 +38,10 @@ export const useUserVerification = () => {
       isVerifyingRef.current = true;
 
       try {
-        const data = await read(`users/${id}`);
+        const data = await read(`users/${sessionId}`);
         if (!data) {
           // Usuario no existe, redirigir a página principal para registro
-          router.push(`/?id=${id}`);
+          router.push('/');
           setIsVerified(false);
         } else {
           // Usuario existe
@@ -56,12 +59,12 @@ export const useUserVerification = () => {
     };
 
     verifyUser();
-  }, [id, read, router]);
+  }, [sessionId, isInitialized, read, router]);
 
   return {
-    id,
+    id: sessionId,
     isVerified,
     userData,
-    loading,
+    loading: loading || !isInitialized,
   };
 };
