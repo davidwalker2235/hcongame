@@ -1,5 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
+import { getDatabase, Database } from "firebase/database";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -21,4 +22,7 @@ if (getApps().length === 0) {
   app = getApps()[0];
 }
 
-export { app };
+// Initialize Realtime Database
+const database: Database = getDatabase(app);
+
+export { app, database };
