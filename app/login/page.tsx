@@ -1,9 +1,10 @@
 'use client';
 
+import { Suspense } from "react";
 import styles from "../components/page.module.css";
 import { useUserVerification } from "../hooks/useUserVerification";
 
-export default function Login() {
+function LoginContent() {
   const { isVerified, loading } = useUserVerification();
 
   // Mostrar loading mientras se verifica
@@ -31,5 +32,23 @@ export default function Login() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={
+      <div className={styles.container}>
+        <main className={styles.main}>
+          <div className={styles.content}>
+            <p className={styles.text} style={{ textAlign: 'center' }}>
+              Loading...
+            </p>
+          </div>
+        </main>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

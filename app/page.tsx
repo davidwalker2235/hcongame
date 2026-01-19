@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./components/page.module.css";
 import { Logo } from "./components/Logo";
 import { useFirebaseDatabase } from "./hooks/useFirebaseDatabase";
 import { useSessionId } from "./hooks/useSessionId";
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
   const { sessionId, isInitialized } = useSessionId();
   const { read, write, loading } = useFirebaseDatabase();
@@ -158,5 +158,23 @@ export default function Home() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className={styles.container}>
+        <main className={styles.main}>
+          <div className={styles.content}>
+            <p className={styles.text} style={{ textAlign: 'center' }}>
+              Loading...
+            </p>
+          </div>
+        </main>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }
