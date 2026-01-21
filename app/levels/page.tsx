@@ -2,26 +2,55 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import styles from "../components/page.module.css";
+import { useFirebaseDatabase } from "../hooks/useFirebaseDatabase";
 import { useUserVerification } from "../hooks/useUserVerification";
 
 const LEVEL_COUNT = 7;
 const clampLevel = (value: number) => Math.min(Math.max(Math.floor(value), 1), LEVEL_COUNT);
 
 function LevelsContent() {
-  const { isVerified, loading, userData } = useUserVerification();
+  const { isVerified, loading, userData, id: sessionId } = useUserVerification();
+  const { subscribe } = useFirebaseDatabase();
   const [selectedLevel, setSelectedLevel] = useState(1);
+  const [liveUserData, setLiveUserData] = useState<any>(userData ?? null);
   const didSetInitialLevelRef = useRef(false);
 
   const currentLevelFromData = useMemo(() => {
-    if (!userData?.currentLevel) return 1;
-    return clampLevel(Number(userData.currentLevel));
+    if (!liveUserData?.currentLevel) return 1;
+    return clampLevel(Number(liveUserData.currentLevel));
+  }, [liveUserData]);
+
+  useEffect(() => {
+    setLiveUserData(userData ?? null);
   }, [userData]);
+
+  useEffect(() => {
+    if (!sessionId) {
+      return;
+    }
+
+    const unsubscribe = subscribe(`users/${sessionId}`, (data) => {
+      setLiveUserData(data ?? null);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [sessionId, subscribe]);
 
   useEffect(() => {
     if (!isVerified || loading || didSetInitialLevelRef.current) return;
     setSelectedLevel(currentLevelFromData);
     didSetInitialLevelRef.current = true;
   }, [currentLevelFromData, isVerified, loading]);
+
+  useEffect(() => {
+    if (!didSetInitialLevelRef.current) return;
+
+    if (currentLevelFromData < selectedLevel) {
+      setSelectedLevel(currentLevelFromData);
+    }
+  }, [currentLevelFromData, selectedLevel]);
 
   if (loading || isVerified === null || isVerified === false) {
     return (
