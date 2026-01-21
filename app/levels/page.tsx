@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import styles from "../components/page.module.css";
 import { useFirebaseDatabase } from "../hooks/useFirebaseDatabase";
 import { useUserVerification } from "../hooks/useUserVerification";
+import { LEVEL_TEXTS } from "../data/levelTexts";
 
 const LEVEL_COUNT = 7;
 const clampLevel = (value: number) => Math.min(Math.max(Math.floor(value), 1), LEVEL_COUNT);
@@ -19,6 +20,11 @@ function LevelsContent() {
     if (!liveUserData?.currentLevel) return 1;
     return clampLevel(Number(liveUserData.currentLevel));
   }, [liveUserData]);
+
+  const [levelNote, setLevelNote] = useState('');
+  useEffect(() => {
+    setLevelNote('');
+  }, [selectedLevel]);
 
   useEffect(() => {
     setLiveUserData(userData ?? null);
@@ -100,7 +106,24 @@ function LevelsContent() {
 
           <div className={styles.levelContent}>
             <h2 className={styles.levelTitle}>Level {selectedLevel}</h2>
-            <p className={styles.text}>Este es el level {selectedLevel}</p>
+            <p className={styles.levelDescription}>
+              {LEVEL_TEXTS[selectedLevel] ?? "Lorem ipsum dolor sit amet, consectetur adipiscing elit."}
+            </p>
+            <textarea
+              className={styles.textarea}
+              placeholder="Write your prompt here..."
+              rows={6}
+              value={levelNote}
+              onChange={(event) => setLevelNote(event.target.value)}
+            />
+            <div className={styles.buttonGroup}>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.buttonActive}`}
+              >
+                [Register note]
+              </button>
+            </div>
           </div>
         </section>
       </main>

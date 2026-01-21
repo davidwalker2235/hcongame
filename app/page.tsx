@@ -32,7 +32,7 @@ function HomeContent() {
         const userData = await read(`users/${sessionId}`);
         if (userData) {
           // Usuario existe, redirigir a about
-          router.push('/about');
+          router.push('/levels');
         } else {
           // Usuario no existe, mostrar formulario
           setUserExists(false);
@@ -70,7 +70,7 @@ function HomeContent() {
         email: email.trim(),
       });
       // Redirigir a about después del registro
-      router.push('/about');
+      router.push('/levels');
     } catch (error) {
       console.error('Error registering user:', error);
       setEmailError('Error registering. Please try again.');
@@ -152,7 +152,7 @@ function HomeContent() {
             </div>
 
             <p className={styles.terms}>
-              By submitting your data, you agree to our Terms of Service.
+              By submitting your data, you agree to our <a href="https://www.betterask.erni/es-es/privacy-statement/" target="_blank" rel="noopener noreferrer">private Terms</a>.
             </p>
           </form>
         </div>
