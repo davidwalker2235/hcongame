@@ -1,13 +1,19 @@
+
+
+
+
 'use client';
 
 import { Suspense } from 'react';
 import styles from "../components/page.module.css";
 import { useUserVerification } from "../hooks/useUserVerification";
+import { ErniLogo } from '../components/ErniLogo';
+
+
 
 function AboutContent() {
   const { isVerified, userData, loading } = useUserVerification();
 
-  // Mostrar loading mientras se verifica
   if (loading || isVerified === null || isVerified === false) {
     return (
       <div className={styles.container}>
@@ -26,9 +32,9 @@ function AboutContent() {
     <div className={styles.container}>
       <main className={styles.main}>
         <div className={styles.content}>
-          <p className={styles.text}>
-            soy el contenido de la tab About
-          </p>
+          <div className={styles.asciiLogoWrapper}>
+            <ErniLogo />
+          </div>
           {userData && (
             <div style={{ marginTop: '20px' }}>
               <p className={styles.text}>

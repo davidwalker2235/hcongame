@@ -30,6 +30,25 @@
   overflow-wrap: break-word;
 }
 
+.asciiLogo {
+  font-family: 'Courier New', Courier, monospace;
+  white-space: pre;
+  color: #00ff00;
+  font-size: 12px;
+  margin-bottom: 20px;
+  line-height: 1;
+}
+
+.asciiLogoWrapper {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0 12px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
 .levelsSection {
   display: flex;
   flex-direction: column;

@@ -1,0 +1,17 @@
+.wrapper {
+  width: 100%;
+  max-width: 100%;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+.asciiLogo {
+  font-family: 'Courier New', Courier, monospace;
+  white-space: pre;
+  color: #00ff00;
+  font-size: 12px;
+  margin: 0 auto 20px;
+  line-height: 1;
+  display: block;
+  text-align: center;
+}
