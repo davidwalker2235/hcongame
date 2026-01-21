@@ -121,7 +121,7 @@ function LevelsContent() {
                 type="button"
                 className={`${styles.button} ${styles.buttonActive}`}
               >
-                [Register note]
+                [Ask]
               </button>
             </div>
           </div>
