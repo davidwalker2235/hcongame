@@ -1,13 +1,28 @@
 'use client';
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import styles from "../components/page.module.css";
 import { useUserVerification } from "../hooks/useUserVerification";
 
-function LevelsContent() {
-  const { isVerified, loading } = useUserVerification();
+const LEVEL_COUNT = 7;
+const clampLevel = (value: number) => Math.min(Math.max(Math.floor(value), 1), LEVEL_COUNT);
 
-  // Mostrar loading mientras se verifica
+function LevelsContent() {
+  const { isVerified, loading, userData } = useUserVerification();
+  const [selectedLevel, setSelectedLevel] = useState(1);
+  const didSetInitialLevelRef = useRef(false);
+
+  const currentLevelFromData = useMemo(() => {
+    if (!userData?.currentLevel) return 1;
+    return clampLevel(Number(userData.currentLevel));
+  }, [userData]);
+
+  useEffect(() => {
+    if (!isVerified || loading || didSetInitialLevelRef.current) return;
+    setSelectedLevel(currentLevelFromData);
+    didSetInitialLevelRef.current = true;
+  }, [currentLevelFromData, isVerified, loading]);
+
   if (loading || isVerified === null || isVerified === false) {
     return (
       <div className={styles.container}>
@@ -22,14 +37,43 @@ function LevelsContent() {
     );
   }
 
+  const levelTabs = Array.from({ length: LEVEL_COUNT }, (_, index) => index + 1);
+
   return (
     <div className={styles.container}>
       <main className={styles.main}>
-        <div className={styles.content}>
-          <p className={styles.text}>
-            soy el contenido de la tab Levels
-          </p>
-        </div>
+        <section className={styles.levelsSection}>
+          <div className={styles.levelTabs}>
+            {levelTabs.map((level) => {
+              const isAccessible = level <= currentLevelFromData;
+              const isActive = level === selectedLevel;
+
+              return (
+                <button
+                  key={`level-tab-${level}`}
+                  type="button"
+                  disabled={!isAccessible}
+                  onClick={() => {
+                    if (!isAccessible) return;
+                    setSelectedLevel(level);
+                  }}
+                  className={[
+                    styles.levelTab,
+                    isAccessible ? styles.levelTabAccessible : styles.levelTabLocked,
+                    isActive ? styles.levelTabActive : ""
+                  ].join(" ").trim()}
+                >
+                  Level {level}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className={styles.levelContent}>
+            <h2 className={styles.levelTitle}>Level {selectedLevel}</h2>
+            <p className={styles.text}>Este es el level {selectedLevel}</p>
+          </div>
+        </section>
       </main>
     </div>
   );

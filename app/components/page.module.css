@@ -30,6 +30,60 @@
   overflow-wrap: break-word;
 }
 
+.levelsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.levelTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.levelTab {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background-color: transparent;
+  color: #00cc00;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.levelTabAccessible {
+  color: #00ff00;
+}
+
+.levelTabActive {
+  color: #b3ffb3;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.55);
+  border-color: rgba(0, 255, 0, 0.6);
+}
+
+.levelTabLocked {
+  color: #008800;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.levelContent {
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(0, 255, 0, 0.2);
+  border-radius: 10px;
+  padding: 18px;
+  box-shadow: inset 0 0 30px rgba(0, 255, 0, 0.08);
+}
+
+.levelTitle {
+  font-size: 20px;
+  margin-bottom: 10px;
+  color: #a8ffb0;
+}
+
 .form {
   margin-top: 30px;
   display: flex;
