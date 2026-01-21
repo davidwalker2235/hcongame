@@ -5,6 +5,7 @@ import styles from "../components/page.module.css";
 import { useFirebaseDatabase } from "../hooks/useFirebaseDatabase";
 import { useUserVerification } from "../hooks/useUserVerification";
 import { LEVEL_TEXTS } from "../data/levelTexts";
+import { TypeAnimation } from "react-type-animation";
 
 const LEVEL_COUNT = 7;
 const clampLevel = (value: number) => Math.min(Math.max(Math.floor(value), 1), LEVEL_COUNT);
@@ -22,8 +23,10 @@ function LevelsContent() {
   }, [liveUserData]);
 
   const [levelNote, setLevelNote] = useState('');
+  const [animationDone, setAnimationDone] = useState(false);
   useEffect(() => {
     setLevelNote('');
+    setAnimationDone(false);
   }, [selectedLevel]);
 
   useEffect(() => {
@@ -106,24 +109,38 @@ function LevelsContent() {
 
           <div className={styles.levelContent}>
             <h2 className={styles.levelTitle}>Level {selectedLevel}</h2>
-            <p className={styles.levelDescription}>
-              {LEVEL_TEXTS[selectedLevel] ?? "Lorem ipsum dolor sit amet, consectetur adipiscing elit."}
-            </p>
-            <textarea
-              className={styles.textarea}
-              placeholder="Write your prompt here..."
-              rows={6}
-              value={levelNote}
-              onChange={(event) => setLevelNote(event.target.value)}
+            <TypeAnimation
+              key={`level-description-${selectedLevel}`}
+              sequence={[
+                LEVEL_TEXTS[selectedLevel] ?? "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+                1000,
+                () => setAnimationDone(true)
+              ]}
+              speed={40}
+              wrapper="p"
+              cursor={true}
+              repeat={0}
+              className={styles.levelDescription}
             />
-            <div className={styles.buttonGroup}>
-              <button
-                type="button"
-                className={`${styles.button} ${styles.buttonActive}`}
-              >
-                [Ask]
-              </button>
-            </div>
+            {animationDone && (
+              <>
+                <textarea
+                  className={styles.textarea}
+                  placeholder="Write your prompt here..."
+                  rows={2}
+                  value={levelNote}
+                  onChange={(event) => setLevelNote(event.target.value)}
+                />
+                <div className={styles.buttonGroup}>
+                  <button
+                    type="button"
+                    className={`${styles.button} ${styles.buttonActive}`}
+                  >
+                    [Ask]
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </section>
       </main>
