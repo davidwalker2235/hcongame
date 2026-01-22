@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import NavLink from "./NavLink";
 import styles from "./navigation.module.css";
 
@@ -11,7 +12,9 @@ export default function Navigation() {
     <nav className={styles.nav}>
       <div className={styles.navContainer}>
         <div className={styles.leftSection}>
-          <div className={styles.title}>ERNI Challenge</div>
+          <Link href="/levels" className={styles.title} style={{ textDecoration: 'none', cursor: 'pointer' }}>
+            ERNI Challenge
+          </Link>
         </div>
         <button
           className={styles.menuButton}
