@@ -22,6 +22,8 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [liveUserData, setLiveUserData] = useState<any>(userData ?? null);
   const didSetInitialLevelRef = useRef(false);
+  const [skipAnimation, setSkipAnimation] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const { levelNote, setLevelNote, animationDone, setAnimationDone } = useLevelNote(selectedLevel);
 
@@ -51,6 +53,33 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     return () => unsubscribe();
   }, [sessionId, subscribe]);
 
+  // Resetear skipAnimation cuando cambia el nivel
+  useEffect(() => {
+    setSkipAnimation(false);
+  }, [selectedLevel]);
+
+  // Manejar clicks/touches para interrumpir la animación
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleInteraction = () => {
+      if (!animationDone && !skipAnimation) {
+        setSkipAnimation(true);
+        setAnimationDone(true);
+      }
+    };
+
+    // Añadir listeners para click y touch
+    container.addEventListener('click', handleInteraction);
+    container.addEventListener('touchstart', handleInteraction, { passive: true });
+
+    return () => {
+      container.removeEventListener('click', handleInteraction);
+      container.removeEventListener('touchstart', handleInteraction);
+    };
+  }, [animationDone, skipAnimation, setAnimationDone]);
+
   if (loading || isVerified === null || isVerified === false) {
     return (
       <div className={styles.container}>
@@ -65,8 +94,10 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     );
   }
 
+  const currentLevelText = levelTexts[selectedLevel] ?? "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
+
   return (
-    <div className={styles.container}>
+    <div className={styles.container} ref={containerRef}>
       <main className={styles.main}>
         <div className={styles.content}>
           <LevelTabs
@@ -78,23 +109,29 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
 
           <section className={styles.levelContent}>
             <h2 className={styles.levelTitle}>Level {selectedLevel}</h2>
-            <TypeAnimation
-              key={`level-description-${selectedLevel}`}
-              sequence={[
-                levelTexts[selectedLevel] ?? "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-                1000,
-                () => setAnimationDone(true),
-              ]}
-              speed={40}
-              wrapper="p"
-              cursor={true}
-              repeat={0}
-              className={styles.levelDescription}
-            />
+            {skipAnimation ? (
+              <p className={styles.levelDescription}>
+                {currentLevelText}
+              </p>
+            ) : (
+              <TypeAnimation
+                key={`level-description-${selectedLevel}`}
+                sequence={[
+                  currentLevelText,
+                  1000,
+                  () => setAnimationDone(true),
+                ]}
+                speed={40}
+                wrapper="p"
+                cursor={true}
+                repeat={0}
+                className={styles.levelDescription}
+              />
+            )}
             <LevelActionPanel
               value={levelNote}
               onChange={setLevelNote}
-              visible={animationDone}
+              visible={animationDone || skipAnimation}
             />
           </section>
         </div>
