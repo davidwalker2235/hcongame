@@ -15,32 +15,11 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || ""
 };
 
-// Validar que las variables de entorno estén configuradas
-if (typeof window !== 'undefined') {
-  const requiredEnvVars = [
-    'NEXT_PUBLIC_FIREBASE_API_KEY',
-    'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
-    'NEXT_PUBLIC_FIREBASE_DATABASE_URL',
-    'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
-    'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
-    'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
-    'NEXT_PUBLIC_FIREBASE_APP_ID'
-  ];
-
-  const missingVars = requiredEnvVars.filter(
-    (varName) => !process.env[varName]
-  );
-
-  if (missingVars.length > 0) {
-    console.error(
-      '❌ Faltan las siguientes variables de entorno de Firebase:',
-      missingVars.join(', ')
-    );
-    console.error(
-      'Por favor, configura las variables de entorno en .env.local o en Vercel'
-    );
-  }
-}
+// Nota: La validación de variables de entorno se omite aquí porque:
+// 1. En Next.js, las variables NEXT_PUBLIC_ se inyectan en tiempo de build
+// 2. Si las variables no están disponibles, Firebase fallará al inicializarse de todas formas
+// 3. La validación en tiempo de importación puede dar falsos positivos en el cliente
+// Si hay problemas con Firebase, se mostrarán errores al intentar usarlo
 
 // Initialize Firebase
 let app: FirebaseApp;
