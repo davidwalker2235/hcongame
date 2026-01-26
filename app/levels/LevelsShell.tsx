@@ -26,16 +26,21 @@ interface AskResponse {
   response: string;
 }
 
+interface VerifyResponse {
+  level: number;
+  correct: boolean;
+}
+
 type LevelsShellProps = {
   levelTexts: Record<number, string>;
 };
 
 export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const { isVerified, userData, loading, id: sessionId } = useUserVerification();
-  const { subscribe } = useFirebaseDatabase();
+  const { subscribe, updateData } = useFirebaseDatabase();
   const { executeGet, loading: apiLoading, error: apiError } = useApi<ChallengeResponse>();
   const { executePost: executePostAsk, loading: askLoading, error: askError } = useApi<AskResponse>();
-  const { executePost: executePostVerify, loading: verifyLoading, error: verifyError } = useApi<any>();
+  const { executePost: executePostVerify, loading: verifyLoading, error: verifyError } = useApi<VerifyResponse>();
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [liveUserData, setLiveUserData] = useState<any>(userData ?? null);
   const didSetInitialLevelRef = useRef(false);
@@ -227,14 +232,25 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
 
   // Función para manejar la verificación del secret
   const handleCheck = async () => {
-    if (!secretWord.trim() || verifyLoading) return;
+    if (!secretWord.trim() || verifyLoading || !sessionId) return;
 
     try {
-      await executePostVerify(
+      const response = await executePostVerify(
         `/challenge/${selectedLevel}/verify`,
         { secret: secretWord.trim() }
       );
-      // La respuesta se manejará según lo que devuelva la API
+      
+      // Si la respuesta es correcta, actualizar el currentLevel en Firebase
+      if (response?.correct === true && response?.level) {
+        const currentLevel = response.level;
+        // Calcular el nuevo nivel (level + 1, pero máximo 10)
+        const newLevel = Math.min(currentLevel + 1, 10);
+        
+        // Actualizar Firebase
+        await updateData(`users/${sessionId}`, {
+          currentLevel: newLevel
+        });
+      }
     } catch (error) {
       console.error('Error verifying secret:', error);
       // El error ya está manejado por useApi
