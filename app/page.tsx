@@ -7,6 +7,7 @@ import { Logo } from "./components/Logo";
 import { useFirebaseDatabase } from "./hooks/useFirebaseDatabase";
 import { useSessionId } from "./hooks/useSessionId";
 import { useUserVerification } from "./hooks/useUserVerification";
+import { AnimatedDots } from "./components/AnimatedDots";
 
 function HomeContent() {
   const router = useRouter();
@@ -94,7 +95,7 @@ function HomeContent() {
         <main className={styles.main}>
           <div className={styles.content}>
             <p className={styles.text} style={{ textAlign: 'center' }}>
-              Loading...
+              <AnimatedDots text="Loading..." />
             </p>
           </div>
         </main>
@@ -158,7 +159,7 @@ function HomeContent() {
                 className={`${styles.button} ${isFormValid && !registering ? styles.buttonActive : styles.buttonDisabled}`}
                 disabled={!isFormValid || registering}
               >
-                {registering ? '[Registering...]' : '[Register]'}
+                {registering ? <AnimatedDots text="[Registering...]" /> : '[Register]'}
               </button>
             </div>
 
@@ -179,7 +180,7 @@ export default function Home() {
         <main className={styles.main}>
           <div className={styles.content}>
             <p className={styles.text} style={{ textAlign: 'center' }}>
-              Loading...
+              <AnimatedDots text="Loading..." />
             </p>
           </div>
         </main>

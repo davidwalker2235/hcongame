@@ -1,6 +1,7 @@
 'use client';
 
 import styles from "../../components/page.module.css";
+import { AnimatedDots } from "../../components/AnimatedDots";
 
 type LevelActionPanelProps = {
   value: string;
@@ -44,7 +45,7 @@ export const LevelActionPanel = ({
           className={`${styles.button} ${isButtonEnabled ? styles.buttonActive : styles.buttonDisabled}`}
           disabled={!isButtonEnabled}
         >
-          {loading ? '[Asking...]' : '[Ask]'}
+          {loading ? <AnimatedDots text="[Asking...]" /> : '[Ask]'}
         </button>
       </div>
     </>

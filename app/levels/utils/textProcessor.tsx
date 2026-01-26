@@ -3,6 +3,7 @@ import React from 'react';
 /**
  * Procesa texto con formato markdown simple:
  * - **texto** se convierte en negrita
+ * - *texto* se convierte en cursiva
  * - \n se convierte en saltos de línea
  */
 export function processText(text: string): React.ReactNode[] {
@@ -28,45 +29,103 @@ export function processText(text: string): React.ReactNode[] {
       return;
     }
     
-    // Procesar negritas en esta línea
+    // Procesar negritas y cursivas en esta línea
     const parts: React.ReactNode[] = [];
     let keyCounter = 0;
     
-    // Regex para encontrar **texto** (no greedy para capturar múltiples instancias)
-    const boldRegex = /\*\*(.*?)\*\*/g;
-    let match;
-    let lastIndex = 0;
-    
-    while ((match = boldRegex.exec(line)) !== null) {
-      // Añadir texto antes del match
-      if (match.index > lastIndex) {
-        const beforeText = line.substring(lastIndex, match.index);
-        if (beforeText) {
-          parts.push(
-            <span key={`text-${lineIndex}-${keyCounter++}`}>{beforeText}</span>
+    // Función auxiliar para procesar una línea con formato
+    const processFormattedLine = (textLine: string): React.ReactNode[] => {
+      const lineParts: React.ReactNode[] = [];
+      let currentPos = 0;
+      
+      // Encontrar todas las negritas (**texto**) y cursivas (*texto*)
+      const matches: Array<{
+        start: number;
+        end: number;
+        type: 'bold' | 'italic';
+        content: string;
+      }> = [];
+      
+      // Buscar negritas primero
+      const boldRegex = /\*\*(.*?)\*\*/g;
+      let boldMatch: RegExpExecArray | null;
+      while ((boldMatch = boldRegex.exec(textLine)) !== null) {
+        matches.push({
+          start: boldMatch.index,
+          end: boldMatch.index + boldMatch[0].length,
+          type: 'bold' as const,
+          content: boldMatch[1]
+        });
+      }
+      
+      // Buscar cursivas, pero excluir las que están dentro de negritas
+      const italicRegex = /\*(.*?)\*/g;
+      let italicMatch: RegExpExecArray | null = null;
+      while ((italicMatch = italicRegex.exec(textLine)) !== null) {
+        // Verificar que no esté dentro de una negrita
+        const matchIndex = italicMatch.index;
+        const isInsideBold = matches.some(m => 
+          m.type === 'bold' && 
+          matchIndex >= m.start && 
+          matchIndex < m.end
+        );
+        
+        if (!isInsideBold) {
+          matches.push({
+            start: matchIndex,
+            end: matchIndex + italicMatch[0].length,
+            type: 'italic' as const,
+            content: italicMatch[1]
+          });
+        }
+      }
+      
+      // Ordenar matches por posición
+      matches.sort((a, b) => a.start - b.start);
+      
+      // Procesar matches en orden
+      matches.forEach((match) => {
+        // Añadir texto antes del match
+        if (match.start > currentPos) {
+          const beforeText = textLine.substring(currentPos, match.start);
+          if (beforeText) {
+            lineParts.push(
+              <span key={`text-${lineIndex}-${keyCounter++}`}>{beforeText}</span>
+            );
+          }
+        }
+        
+        // Añadir el texto formateado
+        if (match.type === 'bold') {
+          lineParts.push(
+            <strong key={`bold-${lineIndex}-${keyCounter++}`}>{match.content}</strong>
+          );
+        } else {
+          lineParts.push(
+            <em key={`italic-${lineIndex}-${keyCounter++}`}>{match.content}</em>
+          );
+        }
+        
+        currentPos = match.end;
+      });
+      
+      // Añadir texto restante
+      if (currentPos < textLine.length) {
+        const remainingText = textLine.substring(currentPos);
+        if (remainingText) {
+          lineParts.push(
+            <span key={`text-${lineIndex}-${keyCounter++}`}>{remainingText}</span>
           );
         }
       }
       
-      // Añadir texto en negrita
-      parts.push(
-        <strong key={`bold-${lineIndex}-${keyCounter++}`}>{match[1]}</strong>
-      );
-      
-      lastIndex = match.index + match[0].length;
-    }
+      return lineParts;
+    };
     
-    // Añadir texto restante después del último match
-    if (lastIndex < line.length) {
-      const remainingText = line.substring(lastIndex);
-      if (remainingText) {
-        parts.push(
-          <span key={`text-${lineIndex}-${keyCounter++}`}>{remainingText}</span>
-        );
-      }
-    }
+    const formattedParts = processFormattedLine(line);
+    parts.push(...formattedParts);
     
-    // Si no hubo matches de negrita, añadir la línea completa
+    // Si no hubo matches, añadir la línea completa
     if (parts.length === 0 && line) {
       parts.push(<span key={`text-${lineIndex}-${keyCounter++}`}>{line}</span>);
     }

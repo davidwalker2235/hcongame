@@ -10,6 +10,7 @@ import { LevelActionPanel } from "./components/LevelActionPanel";
 import { useLevelNote } from "./hooks/useLevelNote";
 import { useApi } from "../hooks/useApi";
 import { processText } from "./utils/textProcessor";
+import { AnimatedDots } from "../components/AnimatedDots";
 
 const LEVEL_COUNT = 10;
 const clampLevel = (value: number) => Math.min(Math.max(Math.floor(value), 1), LEVEL_COUNT);
@@ -268,7 +269,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
         <main className={styles.main}>
           <div className={styles.content}>
             <p className={styles.text} style={{ textAlign: "center" }}>
-              Loading...
+              <AnimatedDots text="Loading..." />
             </p>
           </div>
         </main>
@@ -320,11 +321,11 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
 
             {storyLoading && !textToDisplay ? (
               <p className={styles.levelDescription} style={{ textAlign: 'center' }}>
-                Loading...
+                <AnimatedDots text="Loading..." />
               </p>
             ) : skipAnimation ? (
               <p className={styles.levelDescription}>
-                {textToDisplay}
+                {processText(textToDisplay)}
               </p>
             ) : shouldAnimate ? (
               <TypeAnimation
@@ -346,7 +347,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
               />
             ) : (
               <p className={styles.levelDescription}>
-                {textToDisplay}
+                {processText(textToDisplay)}
               </p>
             )}
             <LevelActionPanel
@@ -440,7 +441,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
                         }`}
                         disabled={!secretWord.trim() || verifyLoading}
                       >
-                        {verifyLoading ? '[Checking...]' : '[Check]'}
+                        {verifyLoading ? <AnimatedDots text="[Checking...]" /> : '[Check]'}
                       </button>
                     </div>
                     
