@@ -324,7 +324,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
               </p>
             ) : skipAnimation ? (
               <p className={styles.levelDescription}>
-                {processText(textToDisplay)}
+                {textToDisplay}
               </p>
             ) : shouldAnimate ? (
               <TypeAnimation
@@ -337,7 +337,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
                     animationInProgressRef.current = false;
                   },
                 ]}
-                speed={40}
+                speed={80}
                 wrapper="p"
                 cursor={true}
                 repeat={0}
@@ -346,7 +346,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
               />
             ) : (
               <p className={styles.levelDescription}>
-                {processText(textToDisplay)}
+                {textToDisplay}
               </p>
             )}
             <LevelActionPanel
