@@ -35,6 +35,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const { subscribe } = useFirebaseDatabase();
   const { executeGet, loading: apiLoading, error: apiError } = useApi<ChallengeResponse>();
   const { executePost: executePostAsk, loading: askLoading, error: askError } = useApi<AskResponse>();
+  const { executePost: executePostVerify, loading: verifyLoading, error: verifyError } = useApi<any>();
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [liveUserData, setLiveUserData] = useState<any>(userData ?? null);
   const didSetInitialLevelRef = useRef(false);
@@ -47,6 +48,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const [responseLoading, setResponseLoading] = useState<boolean>(false);
   const [responseAnimationDone, setResponseAnimationDone] = useState<boolean>(false);
   const [skipResponseAnimation, setSkipResponseAnimation] = useState<boolean>(false);
+  const [secretWord, setSecretWord] = useState<string>("");
 
   const { levelNote, setLevelNote, animationDone, setAnimationDone } = useLevelNote(selectedLevel);
 
@@ -82,6 +84,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     setApiResponse("");
     setResponseAnimationDone(false);
     setSkipResponseAnimation(false);
+    setSecretWord("");
   }, [selectedLevel]);
 
   // Hacer llamada GET cuando cambia el nivel seleccionado
@@ -145,6 +148,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     setApiResponse("");
     setResponseAnimationDone(false);
     setSkipResponseAnimation(false);
+    setSecretWord("");
 
     try {
       const response = await executePostAsk(
@@ -160,6 +164,22 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
       // El error ya está manejado por useApi
     } finally {
       setResponseLoading(false);
+    }
+  };
+
+  // Función para manejar la verificación del secret
+  const handleCheck = async () => {
+    if (!secretWord.trim() || verifyLoading) return;
+
+    try {
+      await executePostVerify(
+        `/challenge/${selectedLevel}/verify`,
+        { secret: secretWord.trim() }
+      );
+      // La respuesta se manejará según lo que devuelva la API
+    } catch (error) {
+      console.error('Error verifying secret:', error);
+      // El error ya está manejado por useApi
     }
   };
 
@@ -217,7 +237,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
               </p>
             ) : (animationDone || skipAnimation) ? (
               <p className={styles.levelDescription}>
-                {processText(currentLevelText)}
+                {currentLevelText}
               </p>
             ) : (
               <TypeAnimation
@@ -265,7 +285,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
               <div style={{ marginTop: '20px' }}>
                 {skipResponseAnimation ? (
                   <p className={styles.levelDescription}>
-                    {processText(apiResponse)}
+                    {apiResponse}
                   </p>
                 ) : (
                   <TypeAnimation
@@ -281,6 +301,56 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
                     repeat={0}
                     className={styles.levelDescription}
                   />
+                )}
+              </div>
+            )}
+
+            {/* Input y botón Check - solo visible cuando la respuesta ha terminado */}
+            {(responseAnimationDone || skipResponseAnimation) && apiResponse && (
+              <div style={{ marginTop: '20px' }}>
+                <input
+                  type="text"
+                  value={secretWord}
+                  onChange={(e) => setSecretWord(e.target.value)}
+                  placeholder="Write the secret word"
+                  className={styles.input}
+                  disabled={verifyLoading}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && secretWord.trim() && !verifyLoading) {
+                      handleCheck();
+                    }
+                  }}
+                />
+                <div className={styles.buttonGroup} style={{ marginTop: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={handleCheck}
+                    className={`${styles.button} ${
+                      secretWord.trim() && !verifyLoading
+                        ? styles.buttonActive
+                        : styles.buttonDisabled
+                    }`}
+                    disabled={!secretWord.trim() || verifyLoading}
+                  >
+                    {verifyLoading ? '[Checking...]' : '[Check]'}
+                  </button>
+                </div>
+                
+                {verifyError && (
+                  <div style={{ color: '#ff4444', marginTop: '10px' }}>
+                    <p className={styles.text}>
+                      <strong>Error:</strong> {verifyError.message}
+                    </p>
+                    {verifyError.detail && verifyError.detail.length > 0 && (
+                      <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
+                        {verifyError.detail.map((detail, index) => (
+                          <li key={index} className={styles.text}>
+                            {detail.msg}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 )}
               </div>
             )}
