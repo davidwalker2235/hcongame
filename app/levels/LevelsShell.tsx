@@ -49,6 +49,11 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const [responseAnimationDone, setResponseAnimationDone] = useState<boolean>(false);
   const [skipResponseAnimation, setSkipResponseAnimation] = useState<boolean>(false);
   const [secretWord, setSecretWord] = useState<string>("");
+  // Estado para el texto que se está animando (se congela cuando la animación comienza)
+  const [animatingText, setAnimatingText] = useState<string>("");
+  const animationInProgressRef = useRef<boolean>(false);
+  // Ref para rastrear la key estable de la animación de respuesta
+  const responseAnimationKeyRef = useRef<string>("");
 
   const { levelNote, setLevelNote, animationDone, setAnimationDone } = useLevelNote(selectedLevel);
 
@@ -85,7 +90,14 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     setResponseAnimationDone(false);
     setSkipResponseAnimation(false);
     setSecretWord("");
-  }, [selectedLevel]);
+    // Resetear animationDone cuando cambia el nivel para que la animación se ejecute de nuevo
+    setAnimationDone(false);
+    // Resetear texto de animación
+    setAnimatingText("");
+    animationInProgressRef.current = false;
+    // Resetear key de animación de respuesta
+    responseAnimationKeyRef.current = "";
+  }, [selectedLevel, setAnimationDone]);
 
   // Hacer llamada GET cuando cambia el nivel seleccionado
   useEffect(() => {
@@ -95,6 +107,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
       setStoryLoading(true);
       setLevelStory("");
       setLevelHint("");
+      setAnimatingText("");
       try {
         const response = await executeGet(`/challenge/${selectedLevel}`);
         if (response?.story) {
@@ -114,29 +127,72 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     fetchLevelData();
   }, [selectedLevel, isVerified, executeGet]);
 
+  // Establecer animatingText cuando levelStory cambia y la animación no está en progreso
+  useEffect(() => {
+    // Solo establecer animatingText si:
+    // 1. Tenemos levelStory
+    // 2. La animación no ha terminado
+    // 3. No está saltada
+    // 4. La animación no está en progreso
+    // 5. animatingText está vacío o es diferente (para evitar loops)
+    if (levelStory && !animationDone && !skipAnimation && !animationInProgressRef.current && animatingText !== levelStory) {
+      setAnimatingText(levelStory);
+    }
+  }, [levelStory, animationDone, skipAnimation, animatingText]);
+
+  // Marcar que la animación está en progreso cuando shouldAnimate se vuelve true
+  useEffect(() => {
+    const textToDisplay = levelStory || levelTexts[selectedLevel] || "Loading level content...";
+    const currentLevelText = animatingText || textToDisplay;
+    const shouldAnimate = !storyLoading && !skipAnimation && !animationDone && currentLevelText && currentLevelText !== "Loading level content...";
+    
+    if (shouldAnimate && currentLevelText) {
+      animationInProgressRef.current = true;
+    }
+  }, [storyLoading, skipAnimation, animationDone, animatingText, levelStory, selectedLevel, levelTexts]);
+
   // Manejar clicks/touches para interrumpir la animación
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const handleInteraction = () => {
+    const handleInteraction = (e: Event) => {
+      // Solo interrumpir si el click no es en un input, textarea o botón
+      const target = e.target as HTMLElement;
+      const isInteractiveElement = 
+        target.tagName === 'INPUT' || 
+        target.tagName === 'TEXTAREA' || 
+        target.tagName === 'BUTTON' ||
+        target.closest('button') !== null ||
+        target.closest('input') !== null ||
+        target.closest('textarea') !== null;
+      
+      if (isInteractiveElement) {
+        return;
+      }
+
+      // Solo interrumpir si la animación está en progreso y no ha sido saltada ya
       if (!animationDone && !skipAnimation) {
+        e.preventDefault();
+        e.stopPropagation();
         setSkipAnimation(true);
         setAnimationDone(true);
       }
       if (!responseAnimationDone && !skipResponseAnimation && apiResponse) {
+        e.preventDefault();
+        e.stopPropagation();
         setSkipResponseAnimation(true);
         setResponseAnimationDone(true);
       }
     };
 
     // Añadir listeners para click y touch
-    container.addEventListener('click', handleInteraction);
-    container.addEventListener('touchstart', handleInteraction, { passive: true });
+    container.addEventListener('click', handleInteraction, { capture: true });
+    container.addEventListener('touchstart', handleInteraction, { passive: true, capture: true });
 
     return () => {
-      container.removeEventListener('click', handleInteraction);
-      container.removeEventListener('touchstart', handleInteraction);
+      container.removeEventListener('click', handleInteraction, { capture: true } as any);
+      container.removeEventListener('touchstart', handleInteraction, { capture: true } as any);
     };
   }, [animationDone, skipAnimation, setAnimationDone, responseAnimationDone, skipResponseAnimation, apiResponse]);
 
@@ -149,6 +205,8 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     setResponseAnimationDone(false);
     setSkipResponseAnimation(false);
     setSecretWord("");
+    // Generar una key estable para la animación de respuesta
+    responseAnimationKeyRef.current = `response-${selectedLevel}-${Date.now()}`;
 
     try {
       const response = await executePostAsk(
@@ -198,7 +256,15 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   }
 
   // Usar el story de la API si está disponible, sino usar el texto por defecto
-  const currentLevelText = levelStory || levelTexts[selectedLevel] || "Loading level content...";
+  const textToDisplay = levelStory || levelTexts[selectedLevel] || "Loading level content...";
+  
+  // Usar el texto de animación si está disponible, sino usar el texto a mostrar
+  // Esto asegura que el texto no cambie durante la animación
+  const currentLevelText = animatingText || textToDisplay;
+
+  // Determinar si debemos mostrar la animación
+  // Solo animar si tenemos texto, no estamos cargando, no está saltado, y la animación no ha terminado
+  const shouldAnimate = !storyLoading && !skipAnimation && !animationDone && currentLevelText && currentLevelText !== "Loading level content...";
 
   return (
     <div className={styles.container} ref={containerRef}>
@@ -231,28 +297,36 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
               </div>
             )}
 
-            {storyLoading && !levelStory ? (
+            {storyLoading && !textToDisplay ? (
               <p className={styles.levelDescription} style={{ textAlign: 'center' }}>
                 Loading...
               </p>
-            ) : (animationDone || skipAnimation) ? (
+            ) : skipAnimation ? (
               <p className={styles.levelDescription}>
-                {currentLevelText}
+                {processText(textToDisplay)}
               </p>
-            ) : (
+            ) : shouldAnimate ? (
               <TypeAnimation
                 key={`level-description-${selectedLevel}`}
                 sequence={[
                   currentLevelText,
                   1000,
-                  () => setAnimationDone(true),
+                  () => {
+                    setAnimationDone(true);
+                    animationInProgressRef.current = false;
+                  },
                 ]}
                 speed={40}
                 wrapper="p"
                 cursor={true}
                 repeat={0}
                 className={styles.levelDescription}
+                preRenderFirstString={false}
               />
+            ) : (
+              <p className={styles.levelDescription}>
+                {processText(textToDisplay)}
+              </p>
             )}
             <LevelActionPanel
               value={levelNote}
@@ -285,11 +359,11 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
               <div style={{ marginTop: '20px' }}>
                 {skipResponseAnimation ? (
                   <p className={styles.levelDescription}>
-                    {apiResponse}
+                    {processText(apiResponse)}
                   </p>
                 ) : (
                   <TypeAnimation
-                    key={`response-${selectedLevel}-${Date.now()}`}
+                    key={responseAnimationKeyRef.current || `response-${selectedLevel}`}
                     sequence={[
                       apiResponse,
                       1000,
