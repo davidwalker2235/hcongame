@@ -6,45 +6,50 @@ import styles from "./components/page.module.css";
 import { Logo } from "./components/Logo";
 import { useFirebaseDatabase } from "./hooks/useFirebaseDatabase";
 import { useSessionId } from "./hooks/useSessionId";
+import { useUserVerification } from "./hooks/useUserVerification";
 
 function HomeContent() {
   const router = useRouter();
   const { sessionId, isInitialized } = useSessionId();
-  const { read, write, loading } = useFirebaseDatabase();
+  const { updateData, loading } = useFirebaseDatabase();
+  const { isVerified, userData } = useUserVerification();
   
   const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
-  const [userExists, setUserExists] = useState<boolean | null>(null);
   const [registering, setRegistering] = useState(false);
 
-  // Verificar si el usuario existe cuando se carga la página
+  // Cargar datos existentes si el usuario ya tiene algunos datos pero faltan email/nickname
+  useEffect(() => {
+    if (userData && sessionId) {
+      // Si ya tiene datos pero faltan email o nickname, pre-rellenar los campos si existen
+      if (userData.nickname && typeof userData.nickname === 'string' && userData.nickname.trim() !== '') {
+        setNickname(userData.nickname);
+      }
+      if (userData.email && typeof userData.email === 'string' && userData.email.trim() !== '') {
+        setEmail(userData.email);
+      }
+    }
+  }, [userData, sessionId]);
+
+  // Verificar si el usuario ya tiene email y nickname completos
   useEffect(() => {
     if (!isInitialized) return;
 
-    const checkUser = async () => {
-      if (!sessionId) {
-        router.push('/wrong-access');
-        return;
-      }
+    if (!sessionId) {
+      router.push('/wrong-access');
+      return;
+    }
 
-      try {
-        const userData = await read(`users/${sessionId}`);
-        if (userData) {
-          // Usuario existe, redirigir a about
-          router.push('/levels');
-        } else {
-          // Usuario no existe, mostrar formulario
-          setUserExists(false);
-        }
-      } catch (error) {
-        console.error('Error checking user:', error);
-        setUserExists(false);
-      }
-    };
+    // Si está verificado (tiene email y nickname), redirigir a levels
+    if (isVerified === true) {
+      router.push('/levels');
+      return;
+    }
 
-    checkUser();
-  }, [sessionId, isInitialized, read, router]);
+    // Si no está verificado pero el ID existe, mostrar formulario
+    // (esto se maneja con useUserVerification)
+  }, [sessionId, isInitialized, isVerified, router]);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -65,11 +70,12 @@ function HomeContent() {
 
     setRegistering(true);
     try {
-      await write(`users/${sessionId}`, {
+      // Actualizar solo los campos nickname y email del nodo existente
+      await updateData(`users/${sessionId}`, {
         nickname: nickname.trim(),
         email: email.trim(),
       });
-      // Redirigir a about después del registro
+      // Redirigir a levels después del registro
       router.push('/levels');
     } catch (error) {
       console.error('Error registering user:', error);
@@ -82,7 +88,7 @@ function HomeContent() {
   const isFormValid = nickname.trim() !== '' && email.trim() !== '' && !emailError;
 
   // Mostrar loading mientras se verifica el usuario
-  if (userExists === null || loading || !isInitialized) {
+  if (loading || !isInitialized || isVerified === null) {
     return (
       <div className={styles.container}>
         <main className={styles.main}>
@@ -96,8 +102,13 @@ function HomeContent() {
     );
   }
 
-  // Si el usuario existe, no deberíamos llegar aquí (se redirige), pero por si acaso
-  if (userExists) {
+  // Si el usuario está verificado (tiene email y nickname), no deberíamos llegar aquí (se redirige)
+  if (isVerified === true) {
+    return null;
+  }
+
+  // Si no hay sessionId, redirigir a wrong-access
+  if (!sessionId) {
     return null;
   }
 
