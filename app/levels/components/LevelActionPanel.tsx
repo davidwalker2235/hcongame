@@ -7,6 +7,9 @@ type LevelActionPanelProps = {
   onChange: (value: string) => void;
   placeholder?: string;
   visible: boolean;
+  onAsk: () => void;
+  disabled?: boolean;
+  loading?: boolean;
 };
 
 export const LevelActionPanel = ({
@@ -14,10 +17,15 @@ export const LevelActionPanel = ({
   onChange,
   placeholder = "Write your prompt here...",
   visible,
+  onAsk,
+  disabled = false,
+  loading = false,
 }: LevelActionPanelProps) => {
   if (!visible) {
     return null;
   }
+
+  const isButtonEnabled = value.trim() !== '' && !disabled && !loading;
 
   return (
     <>
@@ -27,10 +35,16 @@ export const LevelActionPanel = ({
         rows={3}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        disabled={loading}
       />
       <div className={styles.buttonGroup}>
-        <button type="button" className={`${styles.button} ${styles.buttonActive}`}>
-          [Ask]
+        <button 
+          type="button" 
+          onClick={onAsk}
+          className={`${styles.button} ${isButtonEnabled ? styles.buttonActive : styles.buttonDisabled}`}
+          disabled={!isButtonEnabled}
+        >
+          {loading ? '[Asking...]' : '[Ask]'}
         </button>
       </div>
     </>

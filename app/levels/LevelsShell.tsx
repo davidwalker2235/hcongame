@@ -21,6 +21,11 @@ interface ChallengeResponse {
   hint: string;
 }
 
+interface AskResponse {
+  level: number;
+  response: string;
+}
+
 type LevelsShellProps = {
   levelTexts: Record<number, string>;
 };
@@ -29,6 +34,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const { isVerified, userData, loading, id: sessionId } = useUserVerification();
   const { subscribe } = useFirebaseDatabase();
   const { executeGet, loading: apiLoading, error: apiError } = useApi<ChallengeResponse>();
+  const { executePost: executePostAsk, loading: askLoading, error: askError } = useApi<AskResponse>();
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [liveUserData, setLiveUserData] = useState<any>(userData ?? null);
   const didSetInitialLevelRef = useRef(false);
@@ -37,6 +43,10 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const [levelStory, setLevelStory] = useState<string>("");
   const [levelHint, setLevelHint] = useState<string>("");
   const [storyLoading, setStoryLoading] = useState<boolean>(false);
+  const [apiResponse, setApiResponse] = useState<string>("");
+  const [responseLoading, setResponseLoading] = useState<boolean>(false);
+  const [responseAnimationDone, setResponseAnimationDone] = useState<boolean>(false);
+  const [skipResponseAnimation, setSkipResponseAnimation] = useState<boolean>(false);
 
   const { levelNote, setLevelNote, animationDone, setAnimationDone } = useLevelNote(selectedLevel);
 
@@ -69,6 +79,9 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   // Resetear skipAnimation cuando cambia el nivel
   useEffect(() => {
     setSkipAnimation(false);
+    setApiResponse("");
+    setResponseAnimationDone(false);
+    setSkipResponseAnimation(false);
   }, [selectedLevel]);
 
   // Hacer llamada GET cuando cambia el nivel seleccionado
@@ -108,6 +121,10 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
         setSkipAnimation(true);
         setAnimationDone(true);
       }
+      if (!responseAnimationDone && !skipResponseAnimation && apiResponse) {
+        setSkipResponseAnimation(true);
+        setResponseAnimationDone(true);
+      }
     };
 
     // Añadir listeners para click y touch
@@ -118,7 +135,33 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
       container.removeEventListener('click', handleInteraction);
       container.removeEventListener('touchstart', handleInteraction);
     };
-  }, [animationDone, skipAnimation, setAnimationDone]);
+  }, [animationDone, skipAnimation, setAnimationDone, responseAnimationDone, skipResponseAnimation, apiResponse]);
+
+  // Función para manejar el envío del prompt
+  const handleAsk = async () => {
+    if (!levelNote.trim() || responseLoading) return;
+
+    setResponseLoading(true);
+    setApiResponse("");
+    setResponseAnimationDone(false);
+    setSkipResponseAnimation(false);
+
+    try {
+      const response = await executePostAsk(
+        `/challenge/${selectedLevel}`,
+        { prompt: levelNote.trim() }
+      );
+      
+      if (response?.response) {
+        setApiResponse(response.response);
+      }
+    } catch (error) {
+      console.error('Error sending prompt:', error);
+      // El error ya está manejado por useApi
+    } finally {
+      setResponseLoading(false);
+    }
+  };
 
   if (loading || isVerified === null || isVerified === false) {
     return (
@@ -196,7 +239,51 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
               onChange={setLevelNote}
               placeholder={levelHint || undefined}
               visible={(animationDone || skipAnimation) && !storyLoading}
+              onAsk={handleAsk}
+              disabled={askLoading}
+              loading={askLoading || responseLoading}
             />
+            
+            {askError && (
+              <div style={{ color: '#ff4444', marginTop: '20px' }}>
+                <p className={styles.text}>
+                  <strong>Error:</strong> {askError.message}
+                </p>
+                {askError.detail && askError.detail.length > 0 && (
+                  <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
+                    {askError.detail.map((detail, index) => (
+                      <li key={index} className={styles.text}>
+                        {detail.msg}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+            
+            {apiResponse && (
+              <div style={{ marginTop: '20px' }}>
+                {skipResponseAnimation ? (
+                  <p className={styles.levelDescription}>
+                    {processText(apiResponse)}
+                  </p>
+                ) : (
+                  <TypeAnimation
+                    key={`response-${selectedLevel}-${Date.now()}`}
+                    sequence={[
+                      apiResponse,
+                      1000,
+                      () => setResponseAnimationDone(true),
+                    ]}
+                    speed={40}
+                    wrapper="p"
+                    cursor={true}
+                    repeat={0}
+                    className={styles.levelDescription}
+                  />
+                )}
+              </div>
+            )}
           </section>
         </div>
       </main>
