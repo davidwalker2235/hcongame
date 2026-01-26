@@ -1,7 +1,7 @@
 'use client';
 
 import styles from "../../components/page.module.css";
-import { AnimatedDots } from "../../components/AnimatedDots";
+import { Button } from "../../components/Button";
 
 type LevelActionPanelProps = {
   value: string;
@@ -26,8 +26,6 @@ export const LevelActionPanel = ({
     return null;
   }
 
-  const isButtonEnabled = value.trim() !== '' && !disabled && !loading;
-
   return (
     <>
       <textarea
@@ -39,14 +37,14 @@ export const LevelActionPanel = ({
         disabled={loading}
       />
       <div className={styles.buttonGroup}>
-        <button 
-          type="button" 
+        <Button
           onClick={onAsk}
-          className={`${styles.button} ${isButtonEnabled ? styles.buttonActive : styles.buttonDisabled}`}
-          disabled={!isButtonEnabled}
+          disabled={value.trim() === '' || disabled}
+          loading={loading}
+          loadingText="[Asking...]"
         >
-          {loading ? <AnimatedDots text="[Asking...]" /> : '[Ask]'}
-        </button>
+          [Ask]
+        </Button>
       </div>
     </>
   );
