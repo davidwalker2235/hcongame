@@ -54,6 +54,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const [responseAnimationDone, setResponseAnimationDone] = useState<boolean>(false);
   const [skipResponseAnimation, setSkipResponseAnimation] = useState<boolean>(false);
   const [secretWord, setSecretWord] = useState<string>("");
+  const [isCorrect, setIsCorrect] = useState<boolean>(false);
   // Estado para el texto que se está animando (se congela cuando la animación comienza)
   const [animatingText, setAnimatingText] = useState<string>("");
   const animationInProgressRef = useRef<boolean>(false);
@@ -95,6 +96,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     setResponseAnimationDone(false);
     setSkipResponseAnimation(false);
     setSecretWord("");
+    setIsCorrect(false);
     // Resetear animationDone cuando cambia el nivel para que la animación se ejecute de nuevo
     setAnimationDone(false);
     // Resetear texto de animación
@@ -240,7 +242,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
         { secret: secretWord.trim() }
       );
       
-      // Si la respuesta es correcta, actualizar el currentLevel en Firebase
+      // Si la respuesta es correcta, actualizar el currentLevel en Firebase y mostrar mensaje
       if (response?.correct === true && response?.level) {
         const currentLevel = response.level;
         // Calcular el nuevo nivel (level + 1, pero máximo 10)
@@ -250,6 +252,9 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
         await updateData(`users/${sessionId}`, {
           currentLevel: newLevel
         });
+        
+        // Marcar como correcto para mostrar el mensaje de felicitación
+        setIsCorrect(true);
       }
     } catch (error) {
       console.error('Error verifying secret:', error);
@@ -272,7 +277,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   }
 
   // Usar el story de la API si está disponible, sino usar el texto por defecto
-  const textToDisplay = levelStory || levelTexts[selectedLevel] || "Loading level content...";
+  const textToDisplay = levelStory || "Loading level content...";
   
   // Usar el texto de animación si está disponible, sino usar el texto a mostrar
   // Esto asegura que el texto no cambie durante la animación
@@ -398,49 +403,64 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
             {/* Input y botón Check - solo visible cuando la respuesta ha terminado */}
             {(responseAnimationDone || skipResponseAnimation) && apiResponse && (
               <div style={{ marginTop: '20px' }}>
-                <input
-                  type="text"
-                  value={secretWord}
-                  onChange={(e) => setSecretWord(e.target.value)}
-                  placeholder="Write the secret word"
-                  className={styles.input}
-                  disabled={verifyLoading}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && secretWord.trim() && !verifyLoading) {
-                      handleCheck();
-                    }
-                  }}
-                />
-                <div className={styles.buttonGroup} style={{ marginTop: '10px' }}>
-                  <button
-                    type="button"
-                    onClick={handleCheck}
-                    className={`${styles.button} ${
-                      secretWord.trim() && !verifyLoading
-                        ? styles.buttonActive
-                        : styles.buttonDisabled
-                    }`}
-                    disabled={!secretWord.trim() || verifyLoading}
-                  >
-                    {verifyLoading ? '[Checking...]' : '[Check]'}
-                  </button>
-                </div>
-                
-                {verifyError && (
-                  <div style={{ color: '#ff4444', marginTop: '10px' }}>
-                    <p className={styles.text}>
-                      <strong>Error:</strong> {verifyError.message}
-                    </p>
-                    {verifyError.detail && verifyError.detail.length > 0 && (
-                      <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
-                        {verifyError.detail.map((detail, index) => (
-                          <li key={index} className={styles.text}>
-                            {detail.msg}
-                          </li>
-                        ))}
-                      </ul>
+                {isCorrect ? (
+                  <p className={styles.text} style={{ 
+                    color: '#00ff00', 
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    marginTop: '20px',
+                    textShadow: '0 0 10px rgba(0, 255, 0, 0.5)'
+                  }}>
+                    Congratulations, Sir {userData?.nickname || 'User'}. Proceed to the next level.
+                  </p>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      value={secretWord}
+                      onChange={(e) => setSecretWord(e.target.value)}
+                      placeholder="Write the secret word"
+                      className={styles.input}
+                      disabled={verifyLoading}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && secretWord.trim() && !verifyLoading) {
+                          handleCheck();
+                        }
+                      }}
+                    />
+                    <div className={styles.buttonGroup} style={{ marginTop: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={handleCheck}
+                        className={`${styles.button} ${
+                          secretWord.trim() && !verifyLoading
+                            ? styles.buttonActive
+                            : styles.buttonDisabled
+                        }`}
+                        disabled={!secretWord.trim() || verifyLoading}
+                      >
+                        {verifyLoading ? '[Checking...]' : '[Check]'}
+                      </button>
+                    </div>
+                    
+                    {verifyError && (
+                      <div style={{ color: '#ff4444', marginTop: '10px' }}>
+                        <p className={styles.text}>
+                          <strong>Error:</strong> {verifyError.message}
+                        </p>
+                        {verifyError.detail && verifyError.detail.length > 0 && (
+                          <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
+                            {verifyError.detail.map((detail, index) => (
+                              <li key={index} className={styles.text}>
+                                {detail.msg}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
             )}
