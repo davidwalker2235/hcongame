@@ -9,6 +9,7 @@ import { LevelTabs } from "./components/LevelTabs";
 import { LevelActionPanel } from "./components/LevelActionPanel";
 import { useLevelNote } from "./hooks/useLevelNote";
 import { useApi } from "../hooks/useApi";
+import { processText } from "./utils/textProcessor";
 
 const LEVEL_COUNT = 10;
 const clampLevel = (value: number) => Math.min(Math.max(Math.floor(value), 1), LEVEL_COUNT);
@@ -34,6 +35,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const [skipAnimation, setSkipAnimation] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [levelStory, setLevelStory] = useState<string>("");
+  const [levelHint, setLevelHint] = useState<string>("");
   const [storyLoading, setStoryLoading] = useState<boolean>(false);
 
   const { levelNote, setLevelNote, animationDone, setAnimationDone } = useLevelNote(selectedLevel);
@@ -76,10 +78,14 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     const fetchLevelData = async () => {
       setStoryLoading(true);
       setLevelStory("");
+      setLevelHint("");
       try {
         const response = await executeGet(`/challenge/${selectedLevel}`);
         if (response?.story) {
           setLevelStory(response.story);
+        }
+        if (response?.hint) {
+          setLevelHint(response.hint);
         }
       } catch (error) {
         console.error('Error fetching level data:', error);
@@ -166,9 +172,9 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
               <p className={styles.levelDescription} style={{ textAlign: 'center' }}>
                 Loading...
               </p>
-            ) : skipAnimation ? (
+            ) : (animationDone || skipAnimation) ? (
               <p className={styles.levelDescription}>
-                {currentLevelText}
+                {processText(currentLevelText)}
               </p>
             ) : (
               <TypeAnimation
@@ -188,6 +194,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
             <LevelActionPanel
               value={levelNote}
               onChange={setLevelNote}
+              placeholder={levelHint || undefined}
               visible={(animationDone || skipAnimation) && !storyLoading}
             />
           </section>
