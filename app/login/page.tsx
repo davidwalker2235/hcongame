@@ -2,10 +2,25 @@
 
 import { Suspense } from "react";
 import styles from "../components/page.module.css";
-import { LoadingSpinner } from "../components/LoadingSpinner";
-import { ProtectedPage } from "../components/ProtectedPage";
+import { useUserVerification } from "../hooks/useUserVerification";
 
 function LoginContent() {
+  const { isVerified, loading } = useUserVerification();
+
+  // Mostrar loading mientras se verifica
+  if (loading || isVerified === null || isVerified === false) {
+    return (
+      <div className={styles.container}>
+        <main className={styles.main}>
+          <div className={styles.content}>
+            <p className={styles.text} style={{ textAlign: 'center' }}>
+              Loading...
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -22,10 +37,18 @@ function LoginContent() {
 
 export default function Login() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
-      <ProtectedPage>
-        <LoginContent />
-      </ProtectedPage>
+    <Suspense fallback={
+      <div className={styles.container}>
+        <main className={styles.main}>
+          <div className={styles.content}>
+            <p className={styles.text} style={{ textAlign: 'center' }}>
+              Loading...
+            </p>
+          </div>
+        </main>
+      </div>
+    }>
+      <LoginContent />
     </Suspense>
   );
 }

@@ -1,11 +1,20 @@
+'use server';
+
+'use server';
+
 import { Suspense } from "react";
 import { LEVEL_TEXTS } from "../data/levelTexts";
 import { LevelsShell } from "./LevelsShell";
-import { LoadingSpinner } from "../components/LoadingSpinner";
 
-export default function LevelsPage() {
+export default async function LevelsPage() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
+    <Suspense
+      fallback={
+        <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <p>Loading...</p>
+        </div>
+      }
+    >
       <LevelsShell levelTexts={LEVEL_TEXTS} />
     </Suspense>
   );

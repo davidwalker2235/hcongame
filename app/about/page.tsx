@@ -8,11 +8,25 @@ import { Suspense } from 'react';
 import styles from "../components/page.module.css";
 import { useUserVerification } from "../hooks/useUserVerification";
 import { ErniLogo } from '../components/ErniLogo';
-import { LoadingSpinner } from '../components/LoadingSpinner';
-import { ProtectedPage } from '../components/ProtectedPage';
+
+
 
 function AboutContent() {
-  const { userData } = useUserVerification();
+  const { isVerified, userData, loading } = useUserVerification();
+
+  if (loading || isVerified === null || isVerified === false) {
+    return (
+      <div className={styles.container}>
+        <main className={styles.main}>
+          <div className={styles.content}>
+            <p className={styles.text} style={{ textAlign: 'center' }}>
+              Loading...
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -49,10 +63,18 @@ The key to success is the mindset of our ERNIans, shaped by the values and virtu
 
 export default function About() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
-      <ProtectedPage>
-        <AboutContent />
-      </ProtectedPage>
+    <Suspense fallback={
+      <div className={styles.container}>
+        <main className={styles.main}>
+          <div className={styles.content}>
+            <p className={styles.text} style={{ textAlign: 'center' }}>
+              Loading...
+            </p>
+          </div>
+        </main>
+      </div>
+    }>
+      <AboutContent />
     </Suspense>
   );
 }
