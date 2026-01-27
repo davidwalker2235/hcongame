@@ -354,7 +354,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
               value={levelNote}
               onChange={setLevelNote}
               placeholder={levelHint || undefined}
-              visible={(animationDone || skipAnimation) && !storyLoading && !apiError}
+              visible={(animationDone || skipAnimation) && !storyLoading}
               onAsk={handleAsk}
               disabled={askLoading}
               loading={askLoading || responseLoading}
