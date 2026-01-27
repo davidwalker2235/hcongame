@@ -39,9 +39,9 @@ type LevelsShellProps = {
 export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const { isVerified, userData, loading, id: sessionId } = useUserVerification();
   const { subscribe, updateData } = useFirebaseDatabase();
-  const { executeGet, loading: apiLoading, error: apiError } = useApi<ChallengeResponse>();
-  const { executePost: executePostAsk, loading: askLoading, error: askError } = useApi<AskResponse>();
-  const { executePost: executePostVerify, loading: verifyLoading, error: verifyError } = useApi<VerifyResponse>();
+  const { executeGet, loading: apiLoading, error: apiError } = useApi<ChallengeResponse>(sessionId);
+  const { executePost: executePostAsk, loading: askLoading, error: askError } = useApi<AskResponse>(sessionId);
+  const { executePost: executePostVerify, loading: verifyLoading, error: verifyError } = useApi<VerifyResponse>(sessionId);
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [liveUserData, setLiveUserData] = useState<any>(userData ?? null);
   const didSetInitialLevelRef = useRef(false);
