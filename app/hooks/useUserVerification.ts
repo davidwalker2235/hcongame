@@ -4,12 +4,20 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useFirebaseDatabase } from './useFirebaseDatabase';
 import { useSessionId } from './useSessionId';
+import { useApi } from './useApi';
+
+interface ChallengeResponse {
+  level: number;
+  difficulty: string;
+  story: string;
+}
 
 export const useUserVerification = () => {
   const router = useRouter();
   const pathname = usePathname();
   const { sessionId, isInitialized } = useSessionId();
-  const { read, loading } = useFirebaseDatabase();
+  const { read, updateData, loading } = useFirebaseDatabase();
+  const { executeGet } = useApi<ChallengeResponse>(sessionId || undefined);
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [userData, setUserData] = useState<any>(null);
   const previousIdRef = useRef<string | null>(null);
@@ -61,9 +69,35 @@ export const useUserVerification = () => {
         const hasNickname = data.nickname && typeof data.nickname === 'string' && data.nickname.trim() !== '';
 
         if (hasEmail && hasNickname) {
-          // Tiene email y nickname, redirigir a levels
+          // Tiene email y nickname, verificar challenge actual
           setUserData(data);
           setIsVerified(true);
+          
+          // Llamar a la API para obtener el challenge actual
+          try {
+            const challengeResponse = await executeGet(`/challenge/0`);
+            
+            if (challengeResponse && challengeResponse.level !== undefined) {
+              // Comparar el level de la API con el currentLevel del usuario
+              const currentLevel = data.currentLevel ?? null;
+              
+              if (challengeResponse.level !== currentLevel) {
+                // Actualizar el currentLevel en Firebase
+                await updateData(`users/${sessionId}`, {
+                  currentLevel: challengeResponse.level
+                });
+                
+                // Actualizar también el userData local
+                setUserData({
+                  ...data,
+                  currentLevel: challengeResponse.level
+                });
+              }
+            }
+          } catch (error) {
+            // Si hay error en la llamada a la API, continuar sin actualizar
+            console.error('Error fetching challenge:', error);
+          }
           
           // Si estamos en la página principal o wrong-access, redirigir a levels
           if (pathname === '/' || pathname === '/wrong-access') {
@@ -94,7 +128,7 @@ export const useUserVerification = () => {
     };
 
     verifyUser();
-  }, [sessionId, isInitialized, read, router, pathname]);
+  }, [sessionId, isInitialized, read, updateData, executeGet, router, pathname]);
 
   return {
     id: sessionId,
