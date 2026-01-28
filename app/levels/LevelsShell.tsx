@@ -40,8 +40,8 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const { isVerified, userData, loading, id: sessionId } = useUserVerification();
   const { subscribe, updateData } = useFirebaseDatabase();
   const { executeGet, loading: apiLoading, error: apiError } = useApi<ChallengeResponse>(sessionId);
-  const { executePost: executePostAsk, loading: askLoading, error: askError } = useApi<AskResponse>(sessionId);
-  const { executePost: executePostVerify, loading: verifyLoading, error: verifyError } = useApi<VerifyResponse>(sessionId);
+  const { executePost: executePostAsk, loading: askLoading, error: askError, reset: resetAskError } = useApi<AskResponse>(sessionId);
+  const { executePost: executePostVerify, loading: verifyLoading, error: verifyError, reset: resetVerifyError } = useApi<VerifyResponse>(sessionId);
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [liveUserData, setLiveUserData] = useState<any>(userData ?? null);
   const didSetInitialLevelRef = useRef(false);
@@ -56,6 +56,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const [skipResponseAnimation, setSkipResponseAnimation] = useState<boolean>(false);
   const [secretWord, setSecretWord] = useState<string>("");
   const [isCorrect, setIsCorrect] = useState<boolean>(false);
+  const [checkMessage, setCheckMessage] = useState<string | null>(null);
   // Estado para el texto que se está animando (se congela cuando la animación comienza)
   const [animatingText, setAnimatingText] = useState<string>("");
   const animationInProgressRef = useRef<boolean>(false);
@@ -208,6 +209,9 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const handleAsk = async () => {
     if (!levelNote.trim() || responseLoading) return;
 
+    resetAskError();
+    resetVerifyError();
+    setCheckMessage(null);
     setResponseLoading(true);
     setApiResponse("");
     setResponseAnimationDone(false);
@@ -237,6 +241,10 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const handleCheck = async () => {
     if (!secretWord.trim() || verifyLoading || !sessionId) return;
 
+    resetAskError();
+    resetVerifyError();
+    setCheckMessage(null);
+
     try {
       const response = await executePostVerify(
         `/challenge/${selectedLevel}/verify`,
@@ -256,6 +264,9 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
         
         // Marcar como correcto para mostrar el mensaje de felicitación
         setIsCorrect(true);
+        setCheckMessage(null);
+      } else if (response?.correct === false) {
+        setCheckMessage("Incorrect word!, please try again");
       }
     } catch (error) {
       console.error('Error verifying secret:', error);
@@ -445,6 +456,11 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
                       </button>
                     </div>
                     
+                    {checkMessage && (
+                      <div style={{ color: '#ff4444', marginTop: '10px' }}>
+                        <p className={styles.text}>{checkMessage}</p>
+                      </div>
+                    )}
                     {verifyError && (
                       <div style={{ color: '#ff4444', marginTop: '10px' }}>
                         <p className={styles.text}>
