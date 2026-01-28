@@ -25,7 +25,7 @@ export default function Navigation() {
         </button>
         <div className={`${styles.rightSection} ${isMenuOpen ? styles.mobileOpen : ''}`}>
           <NavLink href="/levels" label="Levels" onClick={() => setIsMenuOpen(false)} />
-          <NavLink href="/ranking" label="Ranking" onClick={() => setIsMenuOpen(false)} />
+          <NavLink href="/ranking" label="Leaderboard" onClick={() => setIsMenuOpen(false)} />
           <NavLink href="/about" label="About" onClick={() => setIsMenuOpen(false)} />
         </div>
       </div>

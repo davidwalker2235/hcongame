@@ -5,6 +5,16 @@ import styles from "../components/page.module.css";
 import { useUserVerification } from "../hooks/useUserVerification";
 import { useFirebaseDatabase } from "../hooks/useFirebaseDatabase";
 
+const formatTimestamp = (value: string | number) => {
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString();
+  } catch {
+    return String(value);
+  }
+};
+
 function RankingContent() {
   const { isVerified, loading: verificationLoading } = useUserVerification();
   const { read, loading: firebaseLoading } = useFirebaseDatabase();
@@ -14,11 +24,11 @@ function RankingContent() {
   useEffect(() => {
     const fetchRanking = async () => {
       try {
-        const data = await read('ranking');
+        const data = await read('leaderboard');
         setRankingData(data);
       } catch (err) {
-        console.error('Error fetching ranking:', err);
-        setError('Error loading ranking data');
+        console.error('Error fetching leaderboard:', err);
+        setError('Error loading leaderboard data');
       }
     };
 
@@ -59,7 +69,7 @@ function RankingContent() {
     <div className={styles.container}>
       <main className={styles.main}>
         <div className={styles.content}>
-          <h1 className={styles.title}>Ranking</h1>
+          <h1 className={styles.title}>Leaderboard</h1>
           
           {error && (
             <div style={{ color: '#ff4444', marginBottom: '20px' }}>
@@ -69,14 +79,14 @@ function RankingContent() {
 
           {!rankingData && !error && (
             <p className={styles.text} style={{ textAlign: 'center' }}>
-              No ranking data available
+              No leaderboard data available
             </p>
           )}
 
           {rankingArray.length > 0 && (
             <div style={{ marginTop: '20px' }}>
-              <ol style={{ 
-                listStyle: 'none', 
+              <ol style={{
+                listStyle: 'none',
                 counterReset: 'ranking-counter',
                 padding: 0,
                 margin: 0
@@ -106,35 +116,36 @@ function RankingContent() {
                     >
                       {index + 1}.
                     </span>
-                    <div style={{ color: '#d0ffd0' }}>
-                      {item.nickname && (
-                        <p className={styles.text} style={{ marginBottom: '5px', marginLeft: 0 }}>
-                          {item.nickname}
-                        </p>
-                      )}
-                      {item.email && (
-                        <p className={styles.text} style={{ marginBottom: '5px', marginLeft: 0 }}>
-                          <strong style={{ color: '#00ff00' }}>Email:</strong> {item.email}
-                        </p>
-                      )}
-                      {item.currentLevel !== undefined && (
-                        <p className={styles.text} style={{ marginBottom: '5px', marginLeft: 0 }}>
-                          <strong style={{ color: '#00ff00' }}>Level:</strong> {item.currentLevel}
-                        </p>
-                      )}
-                      {item.score !== undefined && (
-                        <p className={styles.text} style={{ marginBottom: '5px', marginLeft: 0 }}>
-                          <strong style={{ color: '#00ff00' }}>Score:</strong> {item.score}
-                        </p>
-                      )}
-                      {/* Mostrar cualquier otro campo que pueda existir */}
-                      {Object.entries(item)
-                        .filter(([key]) => !['id', 'nickname', 'email', 'currentLevel', 'score'].includes(key))
-                        .map(([key, value]) => (
-                          <p key={key} className={styles.text} style={{ marginBottom: '5px', marginLeft: 0 }}>
-                            <strong style={{ color: '#00ff00' }}>{key}:</strong> {String(value)}
-                          </p>
-                        ))}
+                    <div className={styles.rankingRow}>
+                      <div className={styles.rankingLeft}>
+                        {item.nickname && (
+                          <span className={styles.rankingInline}>
+                            {item.nickname}
+                          </span>
+                        )}
+                        {item.position !== undefined && (
+                          <span className={styles.rankingInline}>
+                            <strong>Pos:</strong> {item.position}
+                          </span>
+                        )}
+                      </div>
+                      <div className={styles.rankingRight}>
+                        {item.completed_at && (
+                          <span className={styles.rankingInline}>
+                            <strong>Completed at:</strong> {formatTimestamp(item.completed_at)}
+                          </span>
+                        )}
+                        {item.highest_level !== undefined && (
+                          <span className={styles.rankingInline}>
+                            <strong>Level:</strong> {item.highest_level}
+                          </span>
+                        )}
+                        {item.total_attempts !== undefined && (
+                          <span className={styles.rankingInline}>
+                            <strong>Attempts:</strong> {item.total_attempts}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </li>
                 ))}
