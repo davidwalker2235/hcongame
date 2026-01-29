@@ -15,6 +15,12 @@ import { AnimatedDots } from "../components/AnimatedDots";
 const LEVEL_COUNT = 10;
 const clampLevel = (value: number) => Math.min(Math.max(Math.floor(value), 1), LEVEL_COUNT);
 
+// A nivel de módulo: UNA sola llamada a /challenge/0 por sesión.
+// lastBootstrapSessionId: sesión para la que ya se hizo bootstrap.
+// lastResetSessionId: solo resetear cuando sessionId CAMBIA (nueva sesión), no en cada remount (Strict Mode).
+let lastBootstrapSessionId: string | null = null;
+let lastResetSessionId: string | null = null;
+
 interface ChallengeResponse {
   level: number;
   difficulty: string;
@@ -45,7 +51,6 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
   const [liveUserData, setLiveUserData] = useState<any>(userData ?? null);
   const didBootstrapRef = useRef(false);
-  const level0FromBootstrapRef = useRef(false);
   const [skipAnimation, setSkipAnimation] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [levelStory, setLevelStory] = useState<string>("");
@@ -79,15 +84,22 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     return () => unsubscribe();
   }, [sessionId, subscribe]);
 
+  // Solo resetear cuando la sesión CAMBIA (otro usuario), no en cada remount (Strict Mode hace 2 mounts).
   useEffect(() => {
+    if (!sessionId) return;
+    if (sessionId === lastResetSessionId) return;
+    lastResetSessionId = sessionId;
+    lastBootstrapSessionId = null;
     didBootstrapRef.current = false;
-    level0FromBootstrapRef.current = false;
   }, [sessionId]);
 
-  // Bootstrap: una sola llamada a /challenge/0 para obtener el nivel del usuario, cotejarlo con Firebase
-  // y luego solo hacer la llamada al nivel resultante (si no es 0, ya que 0 ya viene en la respuesta).
+  // Bootstrap: UNA sola llamada a /challenge/0 SOLO para obtener el nivel actual del usuario.
+  // Se coteja con Firebase; si difiere, se actualiza Firebase al nivel de la API.
+  // selectedLevel queda en 1-10; luego el efecto de fetch hará UNA llamada a /challenge/N.
   useEffect(() => {
-    if (!isVerified || !sessionId || didBootstrapRef.current) return;
+    if (!isVerified || !sessionId) return;
+    if (lastBootstrapSessionId === sessionId) return;
+    lastBootstrapSessionId = sessionId;
 
     const bootstrap = async () => {
       didBootstrapRef.current = true;
@@ -98,30 +110,25 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
       try {
         const response = await executeGet(`/challenge/0`);
         if (response == null) return;
-        const levelFromApi = typeof response.level === 'number' ? response.level : 0;
-        const levelClamped = levelFromApi >= 0 && levelFromApi <= LEVEL_COUNT ? Math.floor(levelFromApi) : clampLevel(levelFromApi);
-        const levelCotejado = Math.max(levelClamped, currentLevelFromData);
-        const levelFinal = levelCotejado >= 0 && levelCotejado <= LEVEL_COUNT ? Math.floor(levelCotejado) : clampLevel(levelCotejado);
-        setSelectedLevel(levelFinal);
-        if (levelFinal === 0) {
-          if (response.story) setLevelStory(response.story);
-          if (response.hint) setLevelHint(response.hint);
-          level0FromBootstrapRef.current = true;
+        const levelFromApi = typeof response.level === "number" ? response.level : 1;
+        const levelFinal = clampLevel(levelFromApi);
+        if (levelFinal !== currentLevelFromData) {
+          await updateData(`users/${sessionId}`, { currentLevel: levelFinal });
         }
+        setSelectedLevel(levelFinal);
       } catch (error) {
-        console.error('Error bootstrap level 0:', error);
+        console.error("Error bootstrap level 0:", error);
       } finally {
         setStoryLoading(false);
       }
     };
 
     bootstrap();
-  }, [isVerified, sessionId, executeGet, currentLevelFromData]);
+  }, [isVerified, sessionId, executeGet, currentLevelFromData, updateData]);
 
   // Resetear skipAnimation cuando cambia el nivel
   useEffect(() => {
     if (selectedLevel === null) return;
-    if (selectedLevel !== 0) level0FromBootstrapRef.current = false;
     setSkipAnimation(false);
     setApiResponse("");
     setResponseAnimationDone(false);
@@ -134,11 +141,9 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     responseAnimationKeyRef.current = "";
   }, [selectedLevel, setAnimationDone]);
 
-  // Hacer llamada GET solo para el nivel resultante (cuando no es 0 desde bootstrap).
-  // El nivel 0 ya se obtuvo en la llamada bootstrap /challenge/0; no repetir esa llamada.
+  // Una única llamada al nivel que corresponda (1-10). Nivel 0 solo se usa en bootstrap.
   useEffect(() => {
     if (!isVerified || selectedLevel === null) return;
-    if (selectedLevel === 0 && level0FromBootstrapRef.current) return;
 
     const fetchLevelData = async () => {
       setStoryLoading(true);
@@ -348,8 +353,8 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
           <LevelTabs
             levelCount={LEVEL_COUNT}
             currentLevel={currentLevelFromData}
-            selectedLevel={selectedLevel + 1}
-            onSelect={(level) => setSelectedLevel(level - 1)}
+            selectedLevel={selectedLevel ?? 1}
+            onSelect={(level) => setSelectedLevel(level)}
           />
 
           <section className={styles.levelContent}>
