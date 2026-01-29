@@ -15,6 +15,26 @@ import { AnimatedDots } from "../components/AnimatedDots";
 const LEVEL_COUNT = 10;
 const clampLevel = (value: number) => Math.min(Math.max(Math.floor(value), 1), LEVEL_COUNT);
 
+const LEVEL_STORY_STORAGE_KEY = "hcongame_level_story_";
+
+function getStoredLevelStory(level: number): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(`${LEVEL_STORY_STORAGE_KEY}${level}`);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredLevelStory(level: number, story: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(`${LEVEL_STORY_STORAGE_KEY}${level}`, story);
+  } catch {
+    // ignore
+  }
+}
+
 // A nivel de módulo: UNA sola llamada a /challenge/0 por sesión.
 // lastBootstrapSessionId: sesión para la que ya se hizo bootstrap.
 // lastResetSessionId: solo resetear cuando sessionId CAMBIA (nueva sesión), no en cada remount (Strict Mode).
@@ -142,15 +162,26 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   }, [selectedLevel, setAnimationDone]);
 
   // Una única llamada al nivel que corresponda (1-10). Nivel 0 solo se usa en bootstrap.
-  // Si el nivel seleccionado es inferior al actual (ya completado), no llamar a la API.
+  // Si el nivel es completado (inferior al actual) o ya está en localStorage: no llamar a la API, usar localStorage.
   useEffect(() => {
     if (!isVerified || selectedLevel === null) return;
     if (selectedLevel < currentLevelFromData) {
+      const stored = getStoredLevelStory(selectedLevel);
+      setLevelStory(stored || "");
       setStoryLoading(false);
-      setLevelStory("");
       setLevelHint("");
       setAnimatingText("");
       setAnimationDone(true);
+      return;
+    }
+
+    const stored = getStoredLevelStory(selectedLevel);
+    if (stored) {
+      setLevelStory(stored);
+      setStoryLoading(false);
+      setAnimatingText("");
+      setAnimationDone(false);
+      setSkipAnimation(false);
       return;
     }
 
@@ -163,6 +194,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
         const response = await executeGet(`/challenge/${selectedLevel}`);
         if (response?.story) {
           setLevelStory(response.story);
+          setStoredLevelStory(selectedLevel, response.story);
         }
         if (response?.hint) {
           setLevelHint(response.hint);
@@ -389,9 +421,16 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
             )}
 
             {isCompletedLevel ? (
-              <p className={styles.levelDescription} style={{ textAlign: 'center', color: '#b3ffb3' }}>
-                Level Completed
-              </p>
+              <>
+                {levelStory ? (
+                  <p className={styles.levelDescription}>
+                    {processText(levelStory)}
+                  </p>
+                ) : null}
+                <p className={styles.levelDescription} style={{ textAlign: 'center', color: '#b3ffb3' }}>
+                  Level completed
+                </p>
+              </>
             ) : storyLoading && !textToDisplay ? (
               <p className={styles.levelDescription} style={{ textAlign: 'center' }}>
                 <AnimatedDots text="Loading..." />
