@@ -13,7 +13,7 @@ export default function Navigation() {
       <div className={styles.navContainer}>
         <div className={styles.leftSection}>
           <Link href="/levels" className={styles.title} style={{ textDecoration: 'none', cursor: 'pointer' }}>
-            ERNI Challenge
+            The ERNI-bots Castle
           </Link>
         </div>
         <button

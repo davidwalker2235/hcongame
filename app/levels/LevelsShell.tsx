@@ -142,8 +142,17 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   }, [selectedLevel, setAnimationDone]);
 
   // Una única llamada al nivel que corresponda (1-10). Nivel 0 solo se usa en bootstrap.
+  // Si el nivel seleccionado es inferior al actual (ya completado), no llamar a la API.
   useEffect(() => {
     if (!isVerified || selectedLevel === null) return;
+    if (selectedLevel < currentLevelFromData) {
+      setStoryLoading(false);
+      setLevelStory("");
+      setLevelHint("");
+      setAnimatingText("");
+      setAnimationDone(true);
+      return;
+    }
 
     const fetchLevelData = async () => {
       setStoryLoading(true);
@@ -166,7 +175,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     };
 
     fetchLevelData();
-  }, [selectedLevel, isVerified, executeGet]);
+  }, [selectedLevel, isVerified, executeGet, currentLevelFromData]);
 
   // Establecer animatingText cuando levelStory cambia y la animación no está en progreso
   useEffect(() => {
@@ -335,6 +344,8 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     );
   }
 
+  const isCompletedLevel = selectedLevel !== null && selectedLevel < currentLevelFromData;
+
   // Usar el story de la API si está disponible, sino usar el texto por defecto
   const textToDisplay = levelStory || "Loading level content...";
   
@@ -344,7 +355,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
 
   // Determinar si debemos mostrar la animación
   // Solo animar si tenemos texto, no estamos cargando, no está saltado, y la animación no ha terminado
-  const shouldAnimate = !storyLoading && !skipAnimation && !animationDone && currentLevelText && currentLevelText !== "Loading level content...";
+  const shouldAnimate = !isCompletedLevel && !storyLoading && !skipAnimation && !animationDone && currentLevelText && currentLevelText !== "Loading level content...";
 
   return (
     <div className={styles.container} ref={containerRef}>
@@ -377,7 +388,11 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
               </div>
             )}
 
-            {storyLoading && !textToDisplay ? (
+            {isCompletedLevel ? (
+              <p className={styles.levelDescription} style={{ textAlign: 'center', color: '#b3ffb3' }}>
+                Level Completed
+              </p>
+            ) : storyLoading && !textToDisplay ? (
               <p className={styles.levelDescription} style={{ textAlign: 'center' }}>
                 <AnimatedDots text="Loading..." />
               </p>
@@ -396,7 +411,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
                     animationInProgressRef.current = false;
                   },
                 ]}
-                speed={80}
+                speed={99}
                 wrapper="p"
                 cursor={true}
                 repeat={0}
@@ -408,6 +423,8 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
                 {processText(textToDisplay)}
               </p>
             )}
+            {!isCompletedLevel && (
+            <>
             <LevelActionPanel
               value={levelNote}
               onChange={setLevelNote}
@@ -527,6 +544,8 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
                   </>
                 )}
               </div>
+            )}
+            </>
             )}
           </section>
         </div>
