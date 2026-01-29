@@ -42,9 +42,10 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const { executeGet, loading: apiLoading, error: apiError } = useApi<ChallengeResponse>(sessionId);
   const { executePost: executePostAsk, loading: askLoading, error: askError, reset: resetAskError } = useApi<AskResponse>(sessionId);
   const { executePost: executePostVerify, loading: verifyLoading, error: verifyError, reset: resetVerifyError } = useApi<VerifyResponse>(sessionId);
-  const [selectedLevel, setSelectedLevel] = useState(1);
+  const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
   const [liveUserData, setLiveUserData] = useState<any>(userData ?? null);
-  const didSetInitialLevelRef = useRef(false);
+  const didBootstrapRef = useRef(false);
+  const level0FromBootstrapRef = useRef(false);
   const [skipAnimation, setSkipAnimation] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [levelStory, setLevelStory] = useState<string>("");
@@ -63,7 +64,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   // Ref para rastrear la key estable de la animación de respuesta
   const responseAnimationKeyRef = useRef<string>("");
 
-  const { levelNote, setLevelNote, animationDone, setAnimationDone } = useLevelNote(selectedLevel);
+  const { levelNote, setLevelNote, animationDone, setAnimationDone } = useLevelNote(selectedLevel ?? 1);
 
   const currentLevelFromData = useMemo(() => {
     if (!liveUserData?.currentLevel) return 1;
@@ -73,44 +74,71 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   useEffect(() => void setLiveUserData(userData ?? null), [userData]);
 
   useEffect(() => {
-    if (!isVerified || loading || didSetInitialLevelRef.current) return;
-    setSelectedLevel(currentLevelFromData);
-    didSetInitialLevelRef.current = true;
-  }, [currentLevelFromData, isVerified, loading]);
-
-  useEffect(() => {
-    if (!didSetInitialLevelRef.current) return;
-    if (currentLevelFromData < selectedLevel) {
-      setSelectedLevel(currentLevelFromData);
-    }
-  }, [currentLevelFromData, selectedLevel]);
-
-  useEffect(() => {
     if (!sessionId) return;
     const unsubscribe = subscribe(`users/${sessionId}`, (data) => setLiveUserData(data ?? null));
     return () => unsubscribe();
   }, [sessionId, subscribe]);
 
+  useEffect(() => {
+    didBootstrapRef.current = false;
+    level0FromBootstrapRef.current = false;
+  }, [sessionId]);
+
+  // Bootstrap: una sola llamada a /challenge/0 para obtener el nivel del usuario, cotejarlo con Firebase
+  // y luego solo hacer la llamada al nivel resultante (si no es 0, ya que 0 ya viene en la respuesta).
+  useEffect(() => {
+    if (!isVerified || !sessionId || didBootstrapRef.current) return;
+
+    const bootstrap = async () => {
+      didBootstrapRef.current = true;
+      setStoryLoading(true);
+      setLevelStory("");
+      setLevelHint("");
+      setAnimatingText("");
+      try {
+        const response = await executeGet(`/challenge/0`);
+        if (response == null) return;
+        const levelFromApi = typeof response.level === 'number' ? response.level : 0;
+        const levelClamped = levelFromApi >= 0 && levelFromApi <= LEVEL_COUNT ? Math.floor(levelFromApi) : clampLevel(levelFromApi);
+        const levelCotejado = Math.max(levelClamped, currentLevelFromData);
+        const levelFinal = levelCotejado >= 0 && levelCotejado <= LEVEL_COUNT ? Math.floor(levelCotejado) : clampLevel(levelCotejado);
+        setSelectedLevel(levelFinal);
+        if (levelFinal === 0) {
+          if (response.story) setLevelStory(response.story);
+          if (response.hint) setLevelHint(response.hint);
+          level0FromBootstrapRef.current = true;
+        }
+      } catch (error) {
+        console.error('Error bootstrap level 0:', error);
+      } finally {
+        setStoryLoading(false);
+      }
+    };
+
+    bootstrap();
+  }, [isVerified, sessionId, executeGet, currentLevelFromData]);
+
   // Resetear skipAnimation cuando cambia el nivel
   useEffect(() => {
+    if (selectedLevel === null) return;
+    if (selectedLevel !== 0) level0FromBootstrapRef.current = false;
     setSkipAnimation(false);
     setApiResponse("");
     setResponseAnimationDone(false);
     setSkipResponseAnimation(false);
     setSecretWord("");
     setIsCorrect(false);
-    // Resetear animationDone cuando cambia el nivel para que la animación se ejecute de nuevo
     setAnimationDone(false);
-    // Resetear texto de animación
     setAnimatingText("");
     animationInProgressRef.current = false;
-    // Resetear key de animación de respuesta
     responseAnimationKeyRef.current = "";
   }, [selectedLevel, setAnimationDone]);
 
-  // Hacer llamada GET cuando cambia el nivel seleccionado
+  // Hacer llamada GET solo para el nivel resultante (cuando no es 0 desde bootstrap).
+  // El nivel 0 ya se obtuvo en la llamada bootstrap /challenge/0; no repetir esa llamada.
   useEffect(() => {
-    if (!isVerified) return;
+    if (!isVerified || selectedLevel === null) return;
+    if (selectedLevel === 0 && level0FromBootstrapRef.current) return;
 
     const fetchLevelData = async () => {
       setStoryLoading(true);
@@ -127,7 +155,6 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
         }
       } catch (error) {
         console.error('Error fetching level data:', error);
-        // El error ya está manejado por useApi
       } finally {
         setStoryLoading(false);
       }
@@ -151,6 +178,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
 
   // Marcar que la animación está en progreso cuando shouldAnimate se vuelve true
   useEffect(() => {
+    if (selectedLevel === null) return;
     const textToDisplay = levelStory || levelTexts[selectedLevel] || "Loading level content...";
     const currentLevelText = animatingText || textToDisplay;
     const shouldAnimate = !storyLoading && !skipAnimation && !animationDone && currentLevelText && currentLevelText !== "Loading level content...";
@@ -288,6 +316,20 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     );
   }
 
+  if (selectedLevel === null) {
+    return (
+      <div className={styles.container}>
+        <main className={styles.main}>
+          <div className={styles.content}>
+            <p className={styles.text} style={{ textAlign: "center" }}>
+              <AnimatedDots text="Loading level..." />
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   // Usar el story de la API si está disponible, sino usar el texto por defecto
   const textToDisplay = levelStory || "Loading level content...";
   
@@ -306,8 +348,8 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
           <LevelTabs
             levelCount={LEVEL_COUNT}
             currentLevel={currentLevelFromData}
-            selectedLevel={selectedLevel}
-            onSelect={setSelectedLevel}
+            selectedLevel={selectedLevel + 1}
+            onSelect={(level) => setSelectedLevel(level - 1)}
           />
 
           <section className={styles.levelContent}>
