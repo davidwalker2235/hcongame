@@ -1,6 +1,6 @@
 export const Logo = () => {
   return (
-    <pre style={{ fontFamily: 'monospace', fontSize: '0.5em', lineHeight: '1.1', margin: 0, textAlign: 'center', whiteSpace: 'pre' }}>
+    <pre style={{ display: 'flex', justifyContent: 'center', fontFamily: 'monospace', fontSize: '0.5em', lineHeight: '1.1', margin: 0, textAlign: 'center', whiteSpace: 'pre' }}>
       {`                                                
                         ...                                                 .                 .....      ...             ...
                                                                                                     

@@ -121,8 +121,9 @@ function HomeContent() {
         </h1>
         <div className={styles.content}>
           <p className={styles.text}>
-            Welcome to ERNI
+            Welcome to The ERNI-bots Castle Challenge
           </p>
+          <p className={styles.text}>Your goal is to make ERNI-Bots reveal the secret password for each level. However, the ERNI-Bots will upgrade the defenses after each successful password guess!</p>
           
           <form className={styles.form}>
             <div className={styles.inputGroup}>
