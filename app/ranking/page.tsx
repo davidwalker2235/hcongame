@@ -140,6 +140,11 @@ function RankingContent() {
                         )}
                       </div>
                       <div className={styles.rankingRight}>
+                        {item.total_attempts !== undefined && (
+                          <span className={styles.rankingInline}>
+                            <strong>Attempts:</strong> {item.total_attempts}
+                          </span>
+                        )}
                         {item.completed_at && (
                           <span className={styles.rankingInline}>
                             <strong>Completed at:</strong> {formatTimestamp(item.completed_at)}
@@ -148,11 +153,6 @@ function RankingContent() {
                         {item.highest_level !== undefined && (
                           <span className={`${styles.rankingInline} ${styles.rankingLevelDesktop}`}>
                             <strong>Level:</strong> {item.highest_level}
-                          </span>
-                        )}
-                        {item.total_attempts !== undefined && (
-                          <span className={styles.rankingInline}>
-                            <strong>Attempts:</strong> {item.total_attempts}
                           </span>
                         )}
                       </div>
