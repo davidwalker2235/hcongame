@@ -7,6 +7,7 @@ import { Logo } from "./components/Logo";
 import { useFirebaseDatabase } from "./hooks/useFirebaseDatabase";
 import { useSessionId } from "./hooks/useSessionId";
 import { useUserVerification } from "./hooks/useUserVerification";
+import { useApi } from "./hooks/useApi";
 import { AnimatedDots } from "./components/AnimatedDots";
 
 function HomeContent() {
@@ -14,6 +15,7 @@ function HomeContent() {
   const { sessionId, isInitialized } = useSessionId();
   const { updateData, loading } = useFirebaseDatabase();
   const { isVerified, userData } = useUserVerification();
+  const { executeGet } = useApi(sessionId);
   
   const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
@@ -71,12 +73,15 @@ function HomeContent() {
 
     setRegistering(true);
     try {
-      // Actualizar solo los campos nickname y email del nodo existente
+      const challengeResponse = await executeGet('/challenge/0');
+      if (challengeResponse == null) {
+        router.push('/wrong-access');
+        return;
+      }
       await updateData(`users/${sessionId}`, {
         nickname: nickname.trim(),
         email: email.trim(),
       });
-      // Redirigir a levels después del registro
       router.push('/levels');
     } catch (error) {
       console.error('Error registering user:', error);

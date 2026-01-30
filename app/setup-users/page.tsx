@@ -8,7 +8,7 @@
  * No hay referencias a esta ruta en el resto de la app.
  */
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ref, set, remove } from 'firebase/database';
 import { database } from '@/app/lib/firebase';
@@ -17,7 +17,7 @@ type Action = 'create' | 'delete';
 
 const USERS_PATH = 'users';
 
-export default function SetupUsersPage() {
+function SetupUsersContent() {
   const searchParams = useSearchParams();
   const [done, setDone] = useState<string | null>(null);
 
@@ -56,6 +56,15 @@ export default function SetupUsersPage() {
       {done === 'ok' && 'OK'}
       {done === 'missing' && 'Missing token or action (create|delete)'}
       {done === 'error' && 'Error'}
+      {done === null && '\u00A0'}
     </main>
+  );
+}
+
+export default function SetupUsersPage() {
+  return (
+    <Suspense fallback={<main style={{ padding: 20, fontFamily: 'monospace', fontSize: 14 }}>\u00A0</main>}>
+      <SetupUsersContent />
+    </Suspense>
   );
 }
