@@ -175,6 +175,19 @@
   color: #00ff88;
 }
 
+/* Fila del usuario activo: mismo efecto que la tab de nivel seleccionada */
+.rankingRowActive {
+  color: #b3ffb3;
+  border-color: rgba(0, 255, 0, 0.6) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.55);
+}
+
+.rankingRowActive > span,
+.rankingRowActive .rankingInline,
+.rankingRowActive .rankingInline strong {
+  color: #b3ffb3;
+}
+
 /* Desktop: Level en la columna derecha */
 .rankingLevelMobile {
   display: none;
