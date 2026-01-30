@@ -462,13 +462,13 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
                 {processText(textToDisplay)}
               </p>
             )}
-            {!isCompletedLevel && (
+            {!isCompletedLevel && levelStory && (
             <>
             <LevelActionPanel
               value={levelNote}
               onChange={setLevelNote}
               placeholder={levelHint || undefined}
-              visible={(animationDone || skipAnimation) && !storyLoading}
+              visible={(animationDone || skipAnimation) && !storyLoading && !!levelStory}
               onAsk={handleAsk}
               disabled={askLoading}
               loading={askLoading || responseLoading}
