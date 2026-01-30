@@ -129,7 +129,12 @@ function HomeContent() {
             Welcome to The ERNI-bots Castle Challenge
           </p>
           <p className={styles.text}>Your goal is to make ERNI-Bots reveal the secret password for each level. However, the ERNI-Bots will upgrade the defenses after each successful password guess!</p>
-          
+          <p>
+            <b style={{ color: 'red' }}>The best part of the CTF arrives this Saturday, February 7 at 6:40 PM.</b> We’ll send an email to the 3 CTF winners to let them know. Stop by our stand for the prize-giving ceremony!
+          </p>
+            <p className={styles.text}>
+              Discover our cybersecurity approach <a href="https://www.betterask.erni/es-es/servicios/ciberseguridad/" target="_blank" rel="noopener noreferrer">here</a>.
+            </p>
           <form className={styles.form}>
             <div className={styles.inputGroup}>
               <label htmlFor="nickname" className={styles.label}>Nickname</label>
@@ -168,7 +173,6 @@ function HomeContent() {
                 {registering ? <AnimatedDots text="[Registering...]" /> : '[Register]'}
               </button>
             </div>
-
             <p className={styles.terms}>
               By submitting your data, you agree to our <a href="https://www.betterask.erni/es-es/privacy-statement/" target="_blank" rel="noopener noreferrer">private Terms</a>.
             </p>
