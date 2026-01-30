@@ -5,11 +5,16 @@ import styles from "../components/page.module.css";
 import { useUserVerification } from "../hooks/useUserVerification";
 import { useFirebaseDatabase } from "../hooks/useFirebaseDatabase";
 
+/** Formato: dd/mm, HH:MM (sin año ni segundos) */
 const formatTimestamp = (value: string | number) => {
   try {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return String(value);
-    return date.toLocaleString();
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}, ${hh}:${min}`;
   } catch {
     return String(value);
   }
@@ -128,6 +133,11 @@ function RankingContent() {
                             <strong>Pos:</strong> {item.position}
                           </span>
                         )}
+                        {item.highest_level !== undefined && (
+                          <span className={`${styles.rankingInline} ${styles.rankingLevelMobile}`}>
+                            <strong>Level:</strong> {item.highest_level}
+                          </span>
+                        )}
                       </div>
                       <div className={styles.rankingRight}>
                         {item.completed_at && (
@@ -136,7 +146,7 @@ function RankingContent() {
                           </span>
                         )}
                         {item.highest_level !== undefined && (
-                          <span className={styles.rankingInline}>
+                          <span className={`${styles.rankingInline} ${styles.rankingLevelDesktop}`}>
                             <strong>Level:</strong> {item.highest_level}
                           </span>
                         )}

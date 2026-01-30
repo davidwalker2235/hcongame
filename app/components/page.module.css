@@ -175,6 +175,37 @@
   color: #00ff88;
 }
 
+/* Desktop: Level en la columna derecha */
+.rankingLevelMobile {
+  display: none;
+}
+
+.rankingLevelDesktop {
+  display: inline-flex;
+}
+
+/* Mobile: Level debajo del nickname; Completed at y Attempts en columna a la derecha */
+@media (max-width: 768px) {
+  .rankingLevelMobile {
+    display: inline-flex;
+  }
+
+  .rankingLevelDesktop {
+    display: none;
+  }
+
+  .rankingLeft {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .rankingRight {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+}
+
 .levelTitle {
   font-size: 20px;
   margin-bottom: 10px;
