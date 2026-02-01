@@ -25,7 +25,7 @@ npm install
    ```bash
    npm run setup:env
    ```
-   O crea manualmente el archivo `.env.local` (ver sección de Variables de Entorno)
+   Esto crea `.env.local` desde la plantilla. **Rellena los valores** con las credenciales de Firebase (Firebase Console o tu equipo). Las credenciales **no están en el repositorio**; ver [SECRETS.md](./SECRETS.md) para dónde obtenerlas y configurarlas en Vercel.
 
 4. Ejecuta el servidor de desarrollo:
 ```bash
@@ -36,26 +36,11 @@ npm run dev
 
 ## Variables de Entorno
 
-### Desarrollo Local
+Las credenciales **no están en el código** ni se suben a GitHub. Para desarrollo local y producción:
 
-Crea un archivo `.env.local` en la raíz del proyecto con las siguientes variables:
-
-```env
-NEXT_PUBLIC_FIREBASE_API_KEY=tu_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=tu_auth_domain
-NEXT_PUBLIC_FIREBASE_DATABASE_URL=tu_database_url
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=tu_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=tu_storage_bucket
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=tu_messaging_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=tu_app_id
-NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=tu_measurement_id
-```
-
-**⚠️ IMPORTANTE:** El archivo `.env.local` está en `.gitignore` y NO debe subirse a GitHub.
-
-### Producción (Vercel)
-
-Las variables de entorno se configuran en el dashboard de Vercel. Ver [DEPLOYMENT.md](./DEPLOYMENT.md) para instrucciones detalladas.
+- **Desarrollo:** `npm run setup:env` crea `.env.local`; rellena los valores (ver [SECRETS.md](./SECRETS.md)).
+- **Producción (Vercel):** configura las mismas variables en Vercel → Settings → Environment Variables. Ver [SECRETS.md](./SECRETS.md) para la lista exacta de keys y valores.
+- El archivo `.env.local` está en `.gitignore` y **no** debe subirse a GitHub. La plantilla `.env.example` sí está en el repo (sin valores).
 
 ## Despliegue
 

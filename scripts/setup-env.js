@@ -1,47 +1,55 @@
 #!/usr/bin/env node
 
 /**
- * Script para crear el archivo .env.local con las credenciales de Firebase
- * Ejecutar: node scripts/setup-env.js
+ * Script para crear .env.local a partir de .env.example (sin credenciales).
+ * Las credenciales NUNCA deben estar en este fichero ni subirse a GitHub.
+ *
+ * Desarrollo local: copia .env.example a .env.local y rellena los valores
+ * (obtén las credenciales en Firebase Console o de tu equipo).
+ *
+ * Ejecutar: npm run setup:env
  */
 
 const fs = require('fs');
 const path = require('path');
 
-const envContent = `# Firebase Configuration
-# Estas credenciales son solo para desarrollo local
-# NO subir este archivo a GitHub
+const envLocalPath = path.join(process.cwd(), '.env.local');
+const envExamplePath = path.join(process.cwd(), '.env.example');
 
-NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyA_JkZn_b6HHf2-uJPgNds3GfR0_S2Adlw
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=hcongame.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://hcongame-default-rtdb.europe-west1.firebasedatabase.app
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=hcongame
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=hcongame.firebasestorage.app
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=829949342689
-NEXT_PUBLIC_FIREBASE_APP_ID=1:829949342689:web:755e90fd716ae3c6a7d8a0
-NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=G-8ET4X61V69
+const templateContent = `# Firebase Configuration (desarrollo local)
+# Rellena los valores desde Firebase Console → Configuración del proyecto
+# O pide las credenciales al equipo. NUNCA subas .env.local a GitHub.
+
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_DATABASE_URL=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
 `;
 
-const envPath = path.join(process.cwd(), '.env.local');
-
 try {
-  // Verificar si el archivo ya existe
-  if (fs.existsSync(envPath)) {
+  if (fs.existsSync(envLocalPath)) {
     console.log('⚠️  El archivo .env.local ya existe.');
     console.log('   Si quieres recrearlo, elimínalo primero.');
     process.exit(0);
   }
 
-  // Crear el archivo .env.local
-  fs.writeFileSync(envPath, envContent, 'utf8');
-  console.log('✅ Archivo .env.local creado exitosamente!');
-  console.log('   Las credenciales de Firebase están configuradas para desarrollo local.');
+  let contentToWrite = templateContent;
+  if (fs.existsSync(envExamplePath)) {
+    contentToWrite = fs.readFileSync(envExamplePath, 'utf8');
+    console.log('📄 Usando plantilla desde .env.example');
+  }
+
+  fs.writeFileSync(envLocalPath, contentToWrite, 'utf8');
+  console.log('✅ Archivo .env.local creado.');
   console.log('');
-  console.log('📝 Recuerda:');
-  console.log('   - El archivo .env.local está en .gitignore y NO se subirá a GitHub');
-  console.log('   - Para producción, configura las variables en Vercel');
-  console.log('   - Ver DEPLOYMENT.md para más información');
+  console.log('📝 Siguiente paso: abre .env.local y rellena los valores.');
+  console.log('   Obtén las credenciales en Firebase Console → Configuración del proyecto.');
+  console.log('   Para producción, configura las variables en Vercel (ver SECRETS.md).');
 } catch (error) {
-  console.error('❌ Error al crear el archivo .env.local:', error.message);
+  console.error('❌ Error al crear .env.local:', error.message);
   process.exit(1);
 }
