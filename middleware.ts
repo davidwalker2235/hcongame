@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'https://fpkd59w7-8000.uks1.devtunnels.ms';
+  process.env.NEXT_PUBLIC_API_URL || 'https://ernibots-api.enricd.com';
 const SESSION_COOKIE_NAME = 'hcongame_session_id';
 
 const PROTECTED_PATHS = ['/', '/levels', '/about', '/ranking', '/login'];
