@@ -47,7 +47,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const didSetInitialLevelRef = useRef(false);
   const [skipAnimation, setSkipAnimation] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [levelStory, setLevelStory] = useState<string>("");
+  const [levelStory, setLevelStory] = useState<string | undefined>(undefined);
   const [levelHint, setLevelHint] = useState<string>("");
   const [storyLoading, setStoryLoading] = useState<boolean>(false);
   const [apiResponse, setApiResponse] = useState<string>("");
@@ -112,15 +112,17 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   useEffect(() => {
     if (!isVerified) return;
 
-    const fetchLevelData = async () => {
+      const fetchLevelData = async () => {
       setStoryLoading(true);
-      setLevelStory("");
+      setLevelStory(undefined);
       setLevelHint("");
       setAnimatingText("");
       try {
         const response = await executeGet(`/challenge/${selectedLevel}`);
-        if (response?.story) {
+        if (response?.story !== undefined && response?.story !== null) {
           setLevelStory(response.story);
+        } else {
+          setLevelStory(undefined);
         }
         if (response?.hint) {
           setLevelHint(response.hint);
@@ -289,7 +291,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   }
 
   // Usar el story de la API si está disponible, sino usar el texto por defecto
-  const textToDisplay = levelStory || "Loading level content...";
+  const textToDisplay = levelStory ?? levelTexts[selectedLevel] ?? "Loading level content...";
   
   // Usar el texto de animación si está disponible, sino usar el texto a mostrar
   // Esto asegura que el texto no cambie durante la animación
