@@ -1,86 +1,75 @@
 # hcongame
 
-## Configuración del Proyecto
+## Requisitos
 
-### Requisitos Previos
-
-- Node.js 18+ instalado
-- Cuenta de Firebase configurada
+- Node.js 18+
+- Cuenta de Firebase
 - Cuenta de Vercel (para despliegue)
 
-### Instalación
+## Instalación
 
-1. Clona el repositorio:
-```bash
-git clone <tu-repositorio>
-cd hcongame
-```
+1. Clona el repositorio y entra en la carpeta:
+   ```bash
+   git clone <tu-repositorio>
+   cd hcongame
+   ```
 
-2. Instala las dependencias:
-```bash
-npm install
-```
+2. Instala dependencias:
+   ```bash
+   npm install
+   ```
 
-3. Configura las variables de entorno:
+3. Configura variables de entorno:
    ```bash
    npm run setup:env
    ```
-   O crea manualmente el archivo `.env.local` (ver sección de Variables de Entorno)
+   Se crea `.env.local` desde la plantilla. **Rellena los valores** con las credenciales de Firebase (Firebase Console → Configuración del proyecto). Las credenciales no están en el repositorio.
 
-4. Ejecuta el servidor de desarrollo:
-```bash
-npm run dev
-```
+4. Arranca el servidor de desarrollo:
+   ```bash
+   npm run dev
+   ```
+   Abre [http://localhost:3000](http://localhost:3000).
 
-5. Abre [http://localhost:3000](http://localhost:3000) en tu navegador
+## Variables de entorno
 
-## Variables de Entorno
+- **Desarrollo:** `.env.local` con las variables de Firebase (mismas keys que en `.env.example`). No subas `.env.local` a GitHub.
+- **Producción (Vercel):** Settings → Environment Variables. Añade las mismas keys con los valores de Firebase.
 
-### Desarrollo Local
+Keys necesarias (valores en Firebase Console):
 
-Crea un archivo `.env.local` en la raíz del proyecto con las siguientes variables:
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_DATABASE_URL`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`
 
-```env
-NEXT_PUBLIC_FIREBASE_API_KEY=tu_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=tu_auth_domain
-NEXT_PUBLIC_FIREBASE_DATABASE_URL=tu_database_url
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=tu_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=tu_storage_bucket
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=tu_messaging_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=tu_app_id
-NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=tu_measurement_id
-```
+## Despliegue (Vercel)
 
-**⚠️ IMPORTANTE:** El archivo `.env.local` está en `.gitignore` y NO debe subirse a GitHub.
+1. Conecta el repositorio de GitHub con Vercel.
+2. Configura las variables de entorno en Vercel (Settings → Environment Variables).
+3. Cada push a la rama principal desplegará automáticamente.
 
-### Producción (Vercel)
-
-Las variables de entorno se configuran en el dashboard de Vercel. Ver [DEPLOYMENT.md](./DEPLOYMENT.md) para instrucciones detalladas.
-
-## Despliegue
-
-Para desplegar en Vercel, consulta la guía completa en [DEPLOYMENT.md](./DEPLOYMENT.md).
-
-### Pasos Rápidos:
-
-1. Conecta tu repositorio de GitHub con Vercel
-2. Configura las variables de entorno en Vercel (Settings → Environment Variables)
-3. Vercel desplegará automáticamente en cada push a la rama principal
-
-## Estructura del Proyecto
+## Estructura del proyecto
 
 ```
 app/
   ├── components/     # Componentes reutilizables
-  ├── hooks/          # Custom hooks (Firebase, sesión, etc.)
-  ├── lib/            # Configuración de Firebase
+  ├── hooks/          # Hooks (API, Firebase, sesión, etc.)
+  ├── lib/            # Firebase y API
   ├── about/          # Página About
-  ├── levels/         # Página Levels
-  ├── login/          # Página Login
-  └── logout/         # Página Logout
+  ├── levels/         # Niveles
+  ├── login/          # Login
+  ├── logout/         # Logout
+  ├── ranking/        # Leaderboard
+  ├── setup-users/    # Utilidad setup (token)
+  └── wrong-access/   # Acceso no autorizado
 ```
 
-## Tecnologías Utilizadas
+## Tecnologías
 
 - Next.js 14+ (App Router)
 - React

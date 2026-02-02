@@ -4,6 +4,15 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
 const SESSION_ID_KEY = 'user_session_id';
+const SESSION_COOKIE_NAME = 'hcongame_session_id';
+
+function getSessionIdFromCookie(): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(
+    new RegExp('(?:^|;\\s*)' + SESSION_COOKIE_NAME + '=([^;]*)')
+  );
+  return match ? decodeURIComponent(match[1]) : null;
+}
 
 export const useSessionId = () => {
   const searchParams = useSearchParams();
@@ -16,38 +25,32 @@ export const useSessionId = () => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Obtener ID de sessionStorage
     const storedId = sessionStorage.getItem(SESSION_ID_KEY);
-    
-    // Si hay ID en la URL (cualquier momento), guardarlo en sessionStorage y limpiar URL
+    const cookieId = getSessionIdFromCookie();
     const urlId = searchParams.get('id');
     const currentPath = pathname;
-    
-    // Siempre limpiar el ID de la URL si está presente
+
     if (urlId) {
-      // Guardar el ID en sessionStorage (actualizar si es diferente)
       if (urlId !== storedId) {
         sessionStorage.setItem(SESSION_ID_KEY, urlId);
       }
       setSessionId(urlId);
-      
-      // Limpiar el ID de la URL siempre que esté presente
-      // Solo limpiar si el pathname cambió o es la primera vez
       if (lastPathRef.current !== currentPath || window.location.search.includes('id=')) {
-        const newUrl = currentPath;
-        window.history.replaceState({}, '', newUrl);
+        window.history.replaceState({}, '', currentPath);
         lastPathRef.current = currentPath;
       }
     } else if (storedId) {
-      // No hay ID en URL pero hay uno en sessionStorage, usarlo
       setSessionId(storedId);
       lastPathRef.current = currentPath;
+    } else if (cookieId) {
+      sessionStorage.setItem(SESSION_ID_KEY, cookieId);
+      setSessionId(cookieId);
+      lastPathRef.current = currentPath;
     } else {
-      // No hay ID ni en URL ni en sessionStorage
       setSessionId(null);
       lastPathRef.current = currentPath;
     }
-    
+
     setIsInitialized(true);
   }, [searchParams, pathname]);
 
@@ -82,6 +85,7 @@ export const useSessionId = () => {
   const clearSessionId = () => {
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem(SESSION_ID_KEY);
+      document.cookie = `${SESSION_COOKIE_NAME}=; path=/; max-age=0`;
       setSessionId(null);
       lastPathRef.current = '';
     }

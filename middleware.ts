@@ -1,28 +1,68 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'https://ernibots-api.enricd.com';
+const SESSION_COOKIE_NAME = 'hcongame_session_id';
+
+const PROTECTED_PATHS = ['/', '/levels', '/about', '/ranking', '/login'];
+
+function isProtectedPath(pathname: string): boolean {
+  return PROTECTED_PATHS.includes(pathname);
+}
+
+async function validateTokenWithApi(token: string): Promise<boolean> {
+  try {
+    const url = `${API_BASE_URL.replace(/\/$/, '')}/challenge/0`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Rutas que no requieren verificación
-  const publicPaths = ['/wrong-access'];
-  
-  // El middleware ya no puede verificar sessionStorage (es del cliente)
-  // La verificación se hace en el cliente con useUserVerification
-  // Solo permitimos el acceso a rutas públicas sin verificación
-  
-  return NextResponse.next();
+  if (!isProtectedPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  const tokenFromUrl = request.nextUrl.searchParams.get('id');
+  const tokenFromCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+  const token = tokenFromUrl || tokenFromCookie || null;
+
+  if (!token) {
+    return NextResponse.redirect(new URL('/wrong-access', request.url));
+  }
+
+  const valid = await validateTokenWithApi(token);
+  if (!valid) {
+    return NextResponse.redirect(new URL('/wrong-access', request.url));
+  }
+
+  const response = NextResponse.next();
+
+  if (tokenFromUrl) {
+    response.cookies.set(SESSION_COOKIE_NAME, token, {
+      path: '/',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7,
+      httpOnly: false,
+    });
+  }
+
+  return response;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };

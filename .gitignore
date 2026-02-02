@@ -24,7 +24,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
+# local env files (no subir credenciales; .env.example sí se sube como plantilla)
 .env*.local
 .env
 DEPLOYMENT.md

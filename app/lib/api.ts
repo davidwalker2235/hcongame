@@ -3,7 +3,7 @@
  * Works in both Server Side Rendering (SSR) and Client Side
  */
 
-const BASE_URL = 'https://fpkd59w7-8000.uks1.devtunnels.ms';
+const BASE_URL = 'https://ernibots-api.enricd.com';
 
 export interface ApiError {
   message: string;

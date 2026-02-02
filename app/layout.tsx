@@ -3,8 +3,8 @@ import "./globals.css";
 import LayoutWrapper from "./components/LayoutWrapper";
 
 export const metadata: Metadata = {
-  title: "ERNI Challenge",
-  description: "ERNI Challenge",
+  title: "The ERNI-bots Castle",
+  description: "The ERNI-bots Castle",
 };
 
 export const viewport: Viewport = {

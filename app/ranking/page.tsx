@@ -5,18 +5,23 @@ import styles from "../components/page.module.css";
 import { useUserVerification } from "../hooks/useUserVerification";
 import { useFirebaseDatabase } from "../hooks/useFirebaseDatabase";
 
+/** Formato: dd/mm, HH:MM (sin año ni segundos) */
 const formatTimestamp = (value: string | number) => {
   try {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return String(value);
-    return date.toLocaleString();
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}, ${hh}:${min}`;
   } catch {
     return String(value);
   }
 };
 
 function RankingContent() {
-  const { isVerified, loading: verificationLoading } = useUserVerification();
+  const { isVerified, loading: verificationLoading, id: sessionId, userData } = useUserVerification();
   const { read, loading: firebaseLoading } = useFirebaseDatabase();
   const [rankingData, setRankingData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -91,25 +96,31 @@ function RankingContent() {
                 padding: 0,
                 margin: 0
               }}>
-                {rankingArray.map((item, index) => (
+                {rankingArray.map((item, index) => {
+                  const isActiveUser =
+                    (sessionId != null && item.id === sessionId) ||
+                    (userData?.nickname != null && item.nickname === userData.nickname);
+                  return (
                   <li
                     key={item.id || index}
+                    className={isActiveUser ? styles.rankingRowActive : undefined}
                     style={{
                       counterIncrement: 'ranking-counter',
                       marginBottom: '15px',
                       padding: '12px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                      border: '1px solid rgba(0, 255, 0, 0.2)',
+                      backgroundColor: isActiveUser ? 'rgba(0, 255, 0, 0.08)' : 'rgba(255, 255, 255, 0.02)',
+                      border: isActiveUser ? '1px solid rgba(0, 255, 0, 0.6)' : '1px solid rgba(0, 255, 0, 0.2)',
                       borderRadius: '5px',
                       position: 'relative',
-                      paddingLeft: '40px'
+                      paddingLeft: '40px',
+                      ...(isActiveUser ? { boxShadow: '0 0 12px rgba(0, 255, 0, 0.5)' } : {})
                     }}
                   >
                     <span
                       style={{
                         position: 'absolute',
                         left: '12px',
-                        color: '#00ff00',
+                        color: isActiveUser ? '#b3ffb3' : '#00ff00',
                         fontWeight: 'bold',
                         fontFamily: 'Courier New, Courier, monospace'
                       }}
@@ -128,27 +139,33 @@ function RankingContent() {
                             <strong>Pos:</strong> {item.position}
                           </span>
                         )}
+                        {item.highest_level !== undefined && (
+                          <span className={`${styles.rankingInline} ${styles.rankingLevelMobile}`}>
+                            <strong>Level:</strong> {item.highest_level}
+                          </span>
+                        )}
                       </div>
                       <div className={styles.rankingRight}>
+                        {item.total_attempts !== undefined && (
+                          <span className={styles.rankingInline}>
+                            <strong>Attempts:</strong> {item.total_attempts}
+                          </span>
+                        )}
                         {item.completed_at && (
                           <span className={styles.rankingInline}>
                             <strong>Completed at:</strong> {formatTimestamp(item.completed_at)}
                           </span>
                         )}
                         {item.highest_level !== undefined && (
-                          <span className={styles.rankingInline}>
+                          <span className={`${styles.rankingInline} ${styles.rankingLevelDesktop}`}>
                             <strong>Level:</strong> {item.highest_level}
-                          </span>
-                        )}
-                        {item.total_attempts !== undefined && (
-                          <span className={styles.rankingInline}>
-                            <strong>Attempts:</strong> {item.total_attempts}
                           </span>
                         )}
                       </div>
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ol>
             </div>
           )}
