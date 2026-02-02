@@ -146,6 +146,15 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     bootstrap();
   }, [isVerified, sessionId, executeGet, currentLevelFromData, updateData]);
 
+  // Al volver a esta ruta (remount), si ya se hizo bootstrap para esta sesión,
+  // selectedLevel queda null porque el estado se reinicia. Restaurar desde currentLevelFromData.
+  useEffect(() => {
+    if (!isVerified || !sessionId) return;
+    if (lastBootstrapSessionId !== sessionId) return;
+    if (selectedLevel !== null) return;
+    setSelectedLevel(currentLevelFromData);
+  }, [isVerified, sessionId, selectedLevel, currentLevelFromData]);
+
   // Resetear skipAnimation cuando cambia el nivel
   useEffect(() => {
     if (selectedLevel === null) return;
