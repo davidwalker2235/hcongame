@@ -96,6 +96,26 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     return clampLevel(Number(liveUserData.currentLevel));
   }, [liveUserData]);
 
+  /** Al cambiar de tab: si es un nivel ya pasado (inferior al actual), solo cambiar de tab sin llamar a la API. Si es el nivel actual o primera visita, sincronizar con /challenge/0. */
+  const handleSelectLevel = async (level: number) => {
+    if (level < currentLevelFromData) {
+      setSelectedLevel(level);
+      return;
+    }
+    if (!sessionId) return;
+    try {
+      const response = await executeGet(`/challenge/0`);
+      if (response == null) return;
+      const levelFromApi = clampLevel(typeof response.level === "number" ? response.level : 1);
+      if (levelFromApi !== currentLevelFromData) {
+        await updateData(`users/${sessionId}`, { currentLevel: levelFromApi });
+      }
+      setSelectedLevel(levelFromApi);
+    } catch (error) {
+      console.error("Error syncing level from API:", error);
+    }
+  };
+
   useEffect(() => void setLiveUserData(userData ?? null), [userData]);
 
   useEffect(() => {
@@ -170,31 +190,25 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     responseAnimationKeyRef.current = "";
   }, [selectedLevel, setAnimationDone]);
 
-  // Una única llamada al nivel que corresponda (1-10). Nivel 0 solo se usa en bootstrap.
-  // Si el nivel es completado (inferior al actual) o ya está en localStorage: no llamar a la API, usar localStorage.
+  // Cargar texto del level: primero localStorage; si no existe, pedir a la API y guardar en localStorage.
+  // Niveles completados (inferior al actual): mismo criterio; no se muestra textarea ni botones, solo "Level Completed!" en rojo.
   useEffect(() => {
     if (!isVerified || selectedLevel === null) return;
-    if (selectedLevel < currentLevelFromData) {
-      const stored = getStoredLevelStory(selectedLevel);
-      setLevelStory(stored || "");
-      setStoryLoading(false);
-      setLevelHint("");
-      setAnimatingText("");
-      setAnimationDone(true);
-      return;
-    }
 
     const stored = getStoredLevelStory(selectedLevel);
+    const isCompletedLevel = selectedLevel < currentLevelFromData;
+
     if (stored) {
       setLevelStory(stored);
       setStoryLoading(false);
+      setLevelHint("");
       setAnimatingText("");
-      setAnimationDone(false);
+      setAnimationDone(isCompletedLevel);
       setSkipAnimation(false);
       return;
     }
 
-      const fetchLevelData = async () => {
+    const fetchLevelData = async () => {
       setStoryLoading(true);
       setLevelStory(undefined);
       setLevelHint("");
@@ -203,11 +217,15 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
         const response = await executeGet(`/challenge/${selectedLevel}`);
         if (response?.story !== undefined && response?.story !== null) {
           setLevelStory(response.story);
+          setStoredLevelStory(selectedLevel, response.story);
         } else {
           setLevelStory(undefined);
         }
         if (response?.hint) {
           setLevelHint(response.hint);
+        }
+        if (isCompletedLevel) {
+          setAnimationDone(true);
         }
       } catch (error) {
         console.error('Error fetching level data:', error);
@@ -407,7 +425,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
             levelCount={LEVEL_COUNT}
             currentLevel={currentLevelFromData}
             selectedLevel={selectedLevel ?? 1}
-            onSelect={(level) => setSelectedLevel(level)}
+            onSelect={handleSelectLevel}
           />
 
           <section className={styles.levelContent}>
@@ -437,8 +455,8 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
                     {processText(levelStory)}
                   </p>
                 ) : null}
-                <p className={styles.levelDescription} style={{ textAlign: 'center', color: '#b3ffb3' }}>
-                  Level completed
+                <p className={styles.levelDescription} style={{ textAlign: 'center', color: 'red', fontWeight: 'bold' }}>
+                  Level Completed!
                 </p>
               </>
             ) : storyLoading && !textToDisplay ? (

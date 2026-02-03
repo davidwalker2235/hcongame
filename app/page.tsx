@@ -73,11 +73,11 @@ function HomeContent() {
 
     setRegistering(true);
     try {
-      const challengeResponse = await executeGet('/challenge/0');
-      if (challengeResponse == null) {
-        router.push('/wrong-access');
-        return;
-      }
+      // const challengeResponse = await executeGet('/challenge/0');
+      // if (challengeResponse == null) {
+        // router.push('/wrong-access');
+       // return;
+      // }
       await updateData(`users/${sessionId}`, {
         nickname: nickname.trim(),
         email: email.trim(),
