@@ -7,6 +7,14 @@ const SESSION_COOKIE_NAME = 'hcongame_session_id';
 
 const PROTECTED_PATHS = ['/', '/levels', '/about', '/ranking', '/login'];
 
+/** TTL en ms: 1 minuto. Evita llamar a la API en cada petición (document, RSC, prefetch). */
+const VALIDATION_CACHE_TTL_MS = 60 * 1000;
+
+const validationCache = new Map<
+  string,
+  { valid: boolean; expiresAt: number }
+>();
+
 function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PATHS.includes(pathname);
 }
@@ -27,6 +35,20 @@ async function validateTokenWithApi(token: string): Promise<boolean> {
   }
 }
 
+async function isTokenValid(token: string): Promise<boolean> {
+  const now = Date.now();
+  const cached = validationCache.get(token);
+  if (cached && cached.expiresAt > now) {
+    return cached.valid;
+  }
+  const valid = await validateTokenWithApi(token);
+  validationCache.set(token, {
+    valid,
+    expiresAt: now + VALIDATION_CACHE_TTL_MS,
+  });
+  return valid;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -42,7 +64,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/wrong-access', request.url));
   }
 
-  const valid = await validateTokenWithApi(token);
+  const valid = await isTokenValid(token);
   if (!valid) {
     return NextResponse.redirect(new URL('/wrong-access', request.url));
   }
