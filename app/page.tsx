@@ -13,13 +13,14 @@ import { AnimatedDots } from "./components/AnimatedDots";
 function HomeContent() {
   const router = useRouter();
   const { sessionId, isInitialized } = useSessionId();
-  const { updateData, loading } = useFirebaseDatabase();
+  const { read, updateData, loading } = useFirebaseDatabase();
   const { isVerified, userData } = useUserVerification();
   const { executeGet } = useApi(sessionId);
   
   const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [nicknameError, setNicknameError] = useState('');
   const [registering, setRegistering] = useState(false);
 
   // Cargar datos existentes si el usuario ya tiene algunos datos pero faltan email/nickname
@@ -72,16 +73,22 @@ function HomeContent() {
     if (!sessionId || !isFormValid) return;
 
     setRegistering(true);
+    setNicknameError('');
     try {
-      // const challengeResponse = await executeGet('/challenge/0');
-      // if (challengeResponse == null) {
-        // router.push('/wrong-access');
-       // return;
-      // }
+      const users = await read<Record<string, { nickname?: string }>>('users');
+      const trimmedNickname = nickname.trim();
+      const isTaken = users && Object.entries(users).some(
+        ([id, data]) => id !== sessionId && data?.nickname?.trim() === trimmedNickname
+      );
+      if (isTaken) {
+        setNicknameError('This nickname is already taken');
+        return;
+      }
       await updateData(`users/${sessionId}`, {
-        nickname: nickname.trim(),
+        nickname: trimmedNickname,
         email: email.trim(),
       });
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       router.push('/levels');
     } catch (error) {
       console.error('Error registering user:', error);
@@ -142,11 +149,15 @@ function HomeContent() {
                 id="nickname"
                 type="text"
                 value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                className={styles.input}
+                onChange={(e) => {
+                  setNickname(e.target.value);
+                  setNicknameError('');
+                }}
+                className={`${styles.input} ${nicknameError ? styles.inputError : ''}`}
                 placeholder="Enter your nickname"
                 disabled={registering}
               />
+              {nicknameError && <span className={styles.errorMessage} style={{ color: 'red' }}>{nicknameError}</span>}
             </div>
 
             <div className={styles.inputGroup}>
