@@ -16,7 +16,7 @@ type LevelActionPanelProps = {
 export const LevelActionPanel = ({
   value,
   onChange,
-  placeholder = "Write your prompt here...",
+  placeholder = "Write your prompt here.",
   visible,
   onAsk,
   disabled = false,
