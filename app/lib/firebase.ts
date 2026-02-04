@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { getDatabase, Database } from "firebase/database";
+import { getAuth, signInWithEmailAndPassword, Auth } from "firebase/auth";
 
 // Your web app's Firebase configuration
 // Las variables de entorno deben tener el prefijo NEXT_PUBLIC_ para estar disponibles en el cliente
@@ -23,11 +24,21 @@ const firebaseConfig = {
 
 // Initialize Firebase
 let app: FirebaseApp;
+let auth: Auth;
+
 if (getApps().length === 0) {
   app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
 } else {
   app = getApps()[0];
+  auth = getAuth(app);
 }
+
+await signInWithEmailAndPassword(
+  auth,
+  process.env.NEXT_PUBLIC_FIREBASE_AUTH_USER || "",
+  process.env.NEXT_PUBLIC_FIREBASE_AUTH_PASSWORD || ""
+);
 
 // Initialize Realtime Database
 const database: Database = getDatabase(app);
