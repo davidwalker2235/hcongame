@@ -12,6 +12,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ref, set, remove } from 'firebase/database';
 import { database } from '@/app/lib/firebase';
+import { ensureFirebaseAuth } from '@/app/lib/firebaseAuth';
 
 type Action = 'create' | 'delete';
 
@@ -32,6 +33,7 @@ function SetupUsersContent() {
 
     const run = async () => {
       try {
+        await ensureFirebaseAuth();
         const path = `${USERS_PATH}/${token}`;
         if (action === 'create') {
           await set(ref(database, path), {

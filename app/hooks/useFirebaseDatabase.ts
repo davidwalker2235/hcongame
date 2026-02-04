@@ -1,20 +1,19 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  ref, 
-  set, 
-  update, 
-  remove, 
-  get, 
-  onValue, 
-  off, 
-  push, 
-  DataSnapshot,
-  DatabaseReference,
-  Query
+import {
+  ref,
+  set,
+  update,
+  remove,
+  get,
+  onValue,
+  off,
+  push,
+  DataSnapshot
 } from 'firebase/database';
 import { database } from '@/app/lib/firebase';
+import { ensureFirebaseAuth } from '@/app/lib/firebaseAuth';
 
 interface UseFirebaseDatabaseReturn {
   // Read operations
@@ -43,13 +42,14 @@ export const useFirebaseDatabase = (): UseFirebaseDatabaseReturn => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
-  const subscriptionsRef = useRef<Map<string, () => void>>(new Map());
+  type SubEntry = { cancelled: boolean; unsubscribe?: () => void };
+  const subscriptionsRef = useRef<Map<string, SubEntry>>(new Map());
 
   // Cleanup subscriptions on unmount
   useEffect(() => {
     return () => {
-      subscriptionsRef.current.forEach((unsubscribe) => {
-        unsubscribe();
+      subscriptionsRef.current.forEach((entry) => {
+        entry.unsubscribe?.();
       });
       subscriptionsRef.current.clear();
     };
@@ -59,6 +59,7 @@ export const useFirebaseDatabase = (): UseFirebaseDatabaseReturn => {
    * Read data from a path (one-time read)
    */
   const readOnce = useCallback(async <T = any>(path: string): Promise<T | null> => {
+    await ensureFirebaseAuth();
     try {
       setLoading(true);
       setError(null);
@@ -89,6 +90,7 @@ export const useFirebaseDatabase = (): UseFirebaseDatabaseReturn => {
    * Write data to a path (replaces existing data)
    */
   const write = useCallback(async <T = any>(path: string, data: T): Promise<void> => {
+    await ensureFirebaseAuth();
     try {
       setLoading(true);
       setError(null);
@@ -107,6 +109,7 @@ export const useFirebaseDatabase = (): UseFirebaseDatabaseReturn => {
    * Update specific fields in a path (merges with existing data)
    */
   const updateData = useCallback(async (path: string, data: Record<string, any>): Promise<void> => {
+    await ensureFirebaseAuth();
     try {
       setLoading(true);
       setError(null);
@@ -125,6 +128,7 @@ export const useFirebaseDatabase = (): UseFirebaseDatabaseReturn => {
    * Remove data from a path
    */
   const removeData = useCallback(async (path: string): Promise<void> => {
+    await ensureFirebaseAuth();
     try {
       setLoading(true);
       setError(null);
@@ -143,6 +147,7 @@ export const useFirebaseDatabase = (): UseFirebaseDatabaseReturn => {
    * Push data to a path (creates a new child with auto-generated key)
    */
   const pushData = useCallback(async <T = any>(path: string, data: T): Promise<string | null> => {
+    await ensureFirebaseAuth();
     try {
       setLoading(true);
       setError(null);
@@ -166,42 +171,48 @@ export const useFirebaseDatabase = (): UseFirebaseDatabaseReturn => {
     path: string,
     callback: (data: T | null) => void
   ): (() => void) => {
-    try {
-      setError(null);
-      const dbRef = ref(database, path);
-      
-      const unsubscribe = onValue(
-        dbRef,
-        (snapshot: DataSnapshot) => {
-          if (snapshot.exists()) {
-            const value = snapshot.val() as T;
-            callback(value);
-            setData(value);
-          } else {
+    setError(null);
+    const entry: SubEntry = { cancelled: false };
+    subscriptionsRef.current.set(path, entry);
+
+    ensureFirebaseAuth()
+      .then(() => {
+        if (entry.cancelled) return;
+        const dbRef = ref(database, path);
+        const unsubscribe = onValue(
+          dbRef,
+          (snapshot: DataSnapshot) => {
+            if (snapshot.exists()) {
+              const value = snapshot.val() as T;
+              callback(value);
+              setData(value);
+            } else {
+              callback(null);
+              setData(null);
+            }
+          },
+          (err) => {
+            const error = err instanceof Error ? err : new Error('Unknown error');
+            setError(error);
             callback(null);
-            setData(null);
           }
-        },
-        (err) => {
-          const error = err instanceof Error ? err : new Error('Unknown error');
-          setError(error);
-          callback(null);
-        }
-      );
+        );
+        entry.unsubscribe = () => {
+          off(dbRef);
+          unsubscribe();
+        };
+      })
+      .catch((err) => {
+        const error = err instanceof Error ? err : new Error('Unknown error');
+        setError(error);
+        callback(null);
+      });
 
-      // Store unsubscribe function
-      subscriptionsRef.current.set(path, unsubscribe);
-
-      // Return cleanup function
-      return () => {
-        off(dbRef);
-        subscriptionsRef.current.delete(path);
-      };
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Unknown error');
-      setError(error);
-      return () => {}; // Return empty function if subscription fails
-    }
+    return () => {
+      entry.cancelled = true;
+      entry.unsubscribe?.();
+      subscriptionsRef.current.delete(path);
+    };
   }, []);
 
   return {
