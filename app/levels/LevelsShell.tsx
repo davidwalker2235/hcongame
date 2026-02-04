@@ -83,6 +83,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const [secretWord, setSecretWord] = useState<string>("");
   const [isCorrect, setIsCorrect] = useState<boolean>(false);
   const [checkMessage, setCheckMessage] = useState<string | null>(null);
+  const [gameFinishedLocal, setGameFinishedLocal] = useState<boolean>(false);
   // Estado para el texto que se está animando (se congela cuando la animación comienza)
   const [animatingText, setAnimatingText] = useState<string>("");
   const animationInProgressRef = useRef<boolean>(false);
@@ -95,9 +96,14 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     if (!liveUserData?.currentLevel) return 1;
     return clampLevel(Number(liveUserData.currentLevel));
   }, [liveUserData]);
+  const isGameFinished = Boolean(liveUserData?.gameFinished) || gameFinishedLocal;
 
   /** Al cambiar de tab: si es un nivel ya pasado (inferior al actual), solo cambiar de tab sin llamar a la API. Si es el nivel actual o primera visita, sincronizar con /challenge/0. */
   const handleSelectLevel = async (level: number) => {
+    if (isGameFinished && level === LEVEL_COUNT) {
+      setSelectedLevel(level);
+      return;
+    }
     if (level < currentLevelFromData) {
       setSelectedLevel(level);
       return;
@@ -131,6 +137,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     lastResetSessionId = sessionId;
     lastBootstrapSessionId = null;
     didBootstrapRef.current = false;
+    setGameFinishedLocal(false);
   }, [sessionId]);
 
   // Bootstrap: UNA sola llamada a /challenge/0 SOLO para obtener el nivel actual del usuario.
@@ -139,6 +146,13 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   useEffect(() => {
     if (!isVerified || !sessionId) return;
     if (lastBootstrapSessionId === sessionId) return;
+    if (isGameFinished) {
+      lastBootstrapSessionId = sessionId;
+      didBootstrapRef.current = true;
+      setSelectedLevel(LEVEL_COUNT);
+      setStoryLoading(false);
+      return;
+    }
     lastBootstrapSessionId = sessionId;
 
     const bootstrap = async () => {
@@ -164,7 +178,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     };
 
     bootstrap();
-  }, [isVerified, sessionId, executeGet, currentLevelFromData, updateData]);
+  }, [isVerified, sessionId, executeGet, currentLevelFromData, updateData, isGameFinished]);
 
   // Al volver a esta ruta (remount), si ya se hizo bootstrap para esta sesión,
   // selectedLevel queda null porque el estado se reinicia. Restaurar desde currentLevelFromData.
@@ -190,10 +204,28 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     responseAnimationKeyRef.current = "";
   }, [selectedLevel, setAnimationDone]);
 
+  useEffect(() => {
+    if (selectedLevel === LEVEL_COUNT && isGameFinished) {
+      setIsCorrect(true);
+      setCheckMessage(null);
+    }
+  }, [selectedLevel, isGameFinished]);
+
   // Cargar texto del level: primero localStorage; si no existe, pedir a la API y guardar en localStorage.
   // Niveles completados (inferior al actual): mismo criterio; no se muestra textarea ni botones, solo "¡Nivel completado!" en rojo.
   useEffect(() => {
     if (!isVerified || selectedLevel === null) return;
+    if (isGameFinished && selectedLevel === LEVEL_COUNT) {
+      const stored = getStoredLevelStory(selectedLevel);
+      if (stored) {
+        setLevelStory(stored);
+      }
+      setStoryLoading(false);
+      setLevelHint("");
+      setAnimatingText("");
+      setAnimationDone(true);
+      return;
+    }
 
     const stored = getStoredLevelStory(selectedLevel);
     const isCompletedLevel = selectedLevel < currentLevelFromData;
@@ -235,7 +267,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     };
 
     fetchLevelData();
-  }, [selectedLevel, isVerified, executeGet, currentLevelFromData]);
+  }, [selectedLevel, isVerified, executeGet, currentLevelFromData, isGameFinished, setAnimationDone]);
 
   // Establecer animatingText cuando levelStory cambia y la animación no está en progreso
   useEffect(() => {
@@ -356,15 +388,22 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
       // Si la respuesta es correcta, actualizar el currentLevel en Firebase y mostrar mensaje
       if (response?.correct === true && response?.level) {
         const currentLevel = response.level;
-        // Calcular el nuevo nivel (level + 1, pero máximo 10)
-        const newLevel = Math.min(currentLevel + 1, 10);
-        
-        // Actualizar Firebase
+        if (currentLevel >= LEVEL_COUNT) {
+          await updateData(`users/${sessionId}`, {
+            currentLevel: LEVEL_COUNT,
+            gameFinished: true,
+          });
+          setGameFinishedLocal(true);
+          setIsCorrect(true);
+          setCheckMessage(null);
+          return;
+        }
+
+        const newLevel = Math.min(currentLevel + 1, LEVEL_COUNT);
         await updateData(`users/${sessionId}`, {
           currentLevel: newLevel
         });
-        
-        // Marcar como correcto para mostrar el mensaje de felicitación
+
         setIsCorrect(true);
         setCheckMessage(null);
       } else if (response?.correct === false) {
@@ -490,7 +529,19 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
                 {processText(textToDisplay)}
               </p>
             )}
-            {!isCompletedLevel && levelStory && (
+            {isGameFinished && selectedLevel === LEVEL_COUNT && (
+              <p className={styles.text} style={{ 
+                color: '#00ff00', 
+                fontSize: '16px',
+                fontWeight: 'bold',
+                textAlign: 'center',
+                marginTop: '20px',
+                textShadow: '0 0 10px rgba(0, 255, 0, 0.5)'
+              }}>
+                Enhorabuena, {userData?.nickname || 'Usuario'}. Has acabado el juego.
+              </p>
+            )}
+            {!isCompletedLevel && levelStory && !(isGameFinished && selectedLevel === LEVEL_COUNT) && (
             <>
             <LevelActionPanel
               value={levelNote}
@@ -555,7 +606,9 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
                     marginTop: '20px',
                     textShadow: '0 0 10px rgba(0, 255, 0, 0.5)'
                   }}>
-                    Enhorabuena, {userData?.nickname || 'Usuario'}. Pasa al siguiente nivel.
+                    {isGameFinished && selectedLevel === LEVEL_COUNT
+                      ? `Enhorabuena, ${userData?.nickname || 'Usuario'}. Has acabado el juego.`
+                      : `Enhorabuena, ${userData?.nickname || 'Usuario'}. Pasa al siguiente nivel.`}
                   </p>
                 ) : (
                   <>
