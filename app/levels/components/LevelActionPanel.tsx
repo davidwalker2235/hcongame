@@ -16,7 +16,7 @@ type LevelActionPanelProps = {
 export const LevelActionPanel = ({
   value,
   onChange,
-  placeholder = "Write your prompt here.",
+  placeholder = "Escribe aquí tu pregunta.",
   visible,
   onAsk,
   disabled = false,
@@ -45,7 +45,7 @@ export const LevelActionPanel = ({
           className={`${styles.button} ${isButtonEnabled ? styles.buttonActive : styles.buttonDisabled}`}
           disabled={!isButtonEnabled}
         >
-          {loading ? <AnimatedDots text="[Asking...]" /> : '[Ask]'}
+          {loading ? <AnimatedDots text="[Preguntando...]" /> : '[Preguntar]'}
         </button>
       </div>
     </>

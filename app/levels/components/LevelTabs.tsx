@@ -43,7 +43,7 @@ export const LevelTabs = ({
               .join(" ")
               .trim()}
           >
-            Level {level}
+            Nivel {level}
           </button>
         );
       })}

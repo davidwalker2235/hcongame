@@ -14,7 +14,7 @@ function LogoutContent() {
         <main className={styles.main}>
           <div className={styles.content}>
             <p className={styles.text} style={{ textAlign: 'center' }}>
-              Loading...
+              Cargando...
             </p>
           </div>
         </main>
@@ -27,7 +27,7 @@ function LogoutContent() {
       <main className={styles.main}>
         <div className={styles.content}>
           <p className={styles.text}>
-            soy el contenido de la tab Log out
+            Contenido de la pestaña Cerrar sesión
           </p>
         </div>
       </main>
@@ -42,7 +42,7 @@ export default function Logout() {
         <main className={styles.main}>
           <div className={styles.content}>
             <p className={styles.text} style={{ textAlign: 'center' }}>
-              Loading...
+              Cargando...
             </p>
           </div>
         </main>

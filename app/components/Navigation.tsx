@@ -19,14 +19,14 @@ export default function Navigation() {
         <button
           className={styles.menuButton}
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label="Toggle menu"
+          aria-label="Abrir o cerrar menú"
         >
           ☰
         </button>
         <div className={`${styles.rightSection} ${isMenuOpen ? styles.mobileOpen : ''}`}>
-          <NavLink href="/levels" label="Levels" onClick={() => setIsMenuOpen(false)} />
-          <NavLink href="/ranking" label="Leaderboard" onClick={() => setIsMenuOpen(false)} />
-          <NavLink href="/about" label="About" onClick={() => setIsMenuOpen(false)} />
+          <NavLink href="/levels" label="Niveles" onClick={() => setIsMenuOpen(false)} />
+          <NavLink href="/ranking" label="Clasificación" onClick={() => setIsMenuOpen(false)} />
+          <NavLink href="/about" label="Acerca de" onClick={() => setIsMenuOpen(false)} />
         </div>
       </div>
     </nav>

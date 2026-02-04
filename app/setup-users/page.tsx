@@ -54,7 +54,7 @@ function SetupUsersContent() {
   return (
     <main style={{ padding: 20, fontFamily: 'monospace', fontSize: 14 }}>
       {done === 'ok' && 'OK'}
-      {done === 'missing' && 'Missing token or action (create|delete)'}
+      {done === 'missing' && 'Falta token o acción (create|delete)'}
       {done === 'error' && 'Error'}
       {done === null && '\u00A0'}
     </main>

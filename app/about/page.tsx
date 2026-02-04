@@ -21,7 +21,7 @@ function AboutContent() {
         <main className={styles.main}>
           <div className={styles.content}>
             <p className={styles.text} style={{ textAlign: 'center' }}>
-              Loading...
+              Cargando...
             </p>
           </div>
         </main>
@@ -39,17 +39,17 @@ function AboutContent() {
           {userData && (
             <div style={{ marginTop: '20px' }}>
               <p className={styles.text}>
-                <strong>Hi</strong> {userData.nickname}
+                <strong>Hola</strong> {userData.nickname}
               </p>
               <p className={styles.text}>
-              We are ERNI. Since 1994, we have focused on advising companies on Innovation and Technology, with the aim of boosting their performance through software development and the digitalization of their critical business processes, thus laying the foundations for a digital future.
+              Somos ERNI. Desde 1994 nos centramos en asesorar a empresas en Innovación y Tecnología, con el objetivo de impulsar su rendimiento mediante el desarrollo de software y la digitalización de sus procesos de negocio críticos, sentando las bases de un futuro digital.
 
-The key to success is the mindset of our ERNIans, shaped by the values and virtues that define us. We work side by side with our clients to help them become more efficient and innovative than their competitors, forming partnerships based on genuine values to achieve ambitious goals.
+La clave del éxito es la mentalidad de nuestros ERNIans, moldeada por los valores y virtudes que nos definen. Trabajamos codo a codo con nuestros clientes para ayudarles a ser más eficientes e innovadores que sus competidores, creando alianzas basadas en valores genuinos para alcanzar objetivos ambiciosos.
               </p>
             </div>
           )}
           <div style={{ marginTop: '20px' }}>
-            Follow us!
+            ¡Síguenos!
             <div className={styles.followLinks}>
               <a
                 href="https://www.linkedin.com/company/erni/posts/?feedView=all"
@@ -102,7 +102,7 @@ export default function About() {
         <main className={styles.main}>
           <div className={styles.content}>
             <p className={styles.text} style={{ textAlign: 'center' }}>
-              Loading...
+              Cargando...
             </p>
           </div>
         </main>

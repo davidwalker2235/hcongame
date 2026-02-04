@@ -191,7 +191,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   }, [selectedLevel, setAnimationDone]);
 
   // Cargar texto del level: primero localStorage; si no existe, pedir a la API y guardar en localStorage.
-  // Niveles completados (inferior al actual): mismo criterio; no se muestra textarea ni botones, solo "Level Completed!" en rojo.
+  // Niveles completados (inferior al actual): mismo criterio; no se muestra textarea ni botones, solo "¡Nivel completado!" en rojo.
   useEffect(() => {
     if (!isVerified || selectedLevel === null) return;
 
@@ -253,9 +253,9 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   // Marcar que la animación está en progreso cuando shouldAnimate se vuelve true
   useEffect(() => {
     if (selectedLevel === null) return;
-    const textToDisplay = levelStory || levelTexts[selectedLevel] || "Loading level content...";
+    const textToDisplay = levelStory || levelTexts[selectedLevel] || "Cargando contenido del nivel...";
     const currentLevelText = animatingText || textToDisplay;
-    const shouldAnimate = !storyLoading && !skipAnimation && !animationDone && currentLevelText && currentLevelText !== "Loading level content...";
+    const shouldAnimate = !storyLoading && !skipAnimation && !animationDone && currentLevelText && currentLevelText !== "Cargando contenido del nivel...";
     
     if (shouldAnimate && currentLevelText) {
       animationInProgressRef.current = true;
@@ -368,7 +368,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
         setIsCorrect(true);
         setCheckMessage(null);
       } else if (response?.correct === false) {
-        setCheckMessage("Incorrect word!, please try again");
+        setCheckMessage("¡Palabra incorrecta! Inténtalo de nuevo.");
       }
     } catch (error) {
       console.error('Error verifying secret:', error);
@@ -382,7 +382,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
         <main className={styles.main}>
           <div className={styles.content}>
             <p className={styles.text} style={{ textAlign: "center" }}>
-              <AnimatedDots text="Loading..." />
+              <AnimatedDots text="Cargando..." />
             </p>
           </div>
         </main>
@@ -396,7 +396,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
         <main className={styles.main}>
           <div className={styles.content}>
             <p className={styles.text} style={{ textAlign: "center" }}>
-              <AnimatedDots text="Loading level..." />
+              <AnimatedDots text="Cargando nivel..." />
             </p>
           </div>
         </main>
@@ -407,7 +407,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const isCompletedLevel = selectedLevel !== null && selectedLevel < currentLevelFromData;
 
   // Usar el story de la API si está disponible, sino usar el texto por defecto
-  const textToDisplay = levelStory ?? levelTexts[selectedLevel] ?? "Loading level content...";
+  const textToDisplay = levelStory ?? levelTexts[selectedLevel] ?? "Cargando contenido del nivel...";
   
   // Usar el texto de animación si está disponible, sino usar el texto a mostrar
   // Esto asegura que el texto no cambie durante la animación
@@ -415,7 +415,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
 
   // Determinar si debemos mostrar la animación
   // Solo animar si tenemos texto, no estamos cargando, no está saltado, y la animación no ha terminado
-  const shouldAnimate = !isCompletedLevel && !storyLoading && !skipAnimation && !animationDone && currentLevelText && currentLevelText !== "Loading level content...";
+  const shouldAnimate = !isCompletedLevel && !storyLoading && !skipAnimation && !animationDone && currentLevelText && currentLevelText !== "Cargando contenido del nivel...";
 
   return (
     <div className={styles.container} ref={containerRef}>
@@ -429,12 +429,12 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
           />
 
           <section className={styles.levelContent}>
-            <h2 className={styles.levelTitle}>Level {selectedLevel}</h2>
+            <h2 className={styles.levelTitle}>Nivel {selectedLevel}</h2>
             
             {apiError && (
               <div style={{ color: '#ff4444', marginBottom: '20px' }}>
                 <p className={styles.text}>
-                  <strong>Error loading level:</strong> {apiError.message}
+                  <strong>Error al cargar el nivel:</strong> {apiError.message}
                 </p>
                 {apiError.detail && apiError.detail.length > 0 && (
                   <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
@@ -456,12 +456,12 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
                   </p>
                 ) : null}
                 <p className={styles.levelDescription} style={{ textAlign: 'center', color: 'red', fontWeight: 'bold' }}>
-                  Level Completed!
+                  ¡Nivel completado!
                 </p>
               </>
             ) : storyLoading && !textToDisplay ? (
               <p className={styles.levelDescription} style={{ textAlign: 'center' }}>
-                <AnimatedDots text="Loading..." />
+                <AnimatedDots text="Cargando..." />
               </p>
             ) : skipAnimation ? (
               <p className={styles.levelDescription}>
@@ -555,7 +555,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
                     marginTop: '20px',
                     textShadow: '0 0 10px rgba(0, 255, 0, 0.5)'
                   }}>
-                    Congratulations, Sir {userData?.nickname || 'User'}. Proceed to the next level.
+                    Enhorabuena, {userData?.nickname || 'Usuario'}. Pasa al siguiente nivel.
                   </p>
                 ) : (
                   <>
@@ -563,7 +563,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
                       type="text"
                       value={secretWord}
                       onChange={(e) => setSecretWord(e.target.value)}
-                      placeholder="Write the secret word"
+                      placeholder="Escribe la palabra secreta"
                       className={styles.input}
                       disabled={verifyLoading}
                       onKeyDown={(e) => {
@@ -583,7 +583,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
                         }`}
                         disabled={!secretWord.trim() || verifyLoading}
                       >
-                        {verifyLoading ? <AnimatedDots text="[Checking...]" /> : '[Check]'}
+                        {verifyLoading ? <AnimatedDots text="[Comprobando...]" /> : '[Comprobar]'}
                       </button>
                     </div>
                     

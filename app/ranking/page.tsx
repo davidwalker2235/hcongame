@@ -33,7 +33,7 @@ function RankingContent() {
         setRankingData(data);
       } catch (err) {
         console.error('Error fetching leaderboard:', err);
-        setError('Error loading leaderboard data');
+        setError('Error al cargar la clasificación');
       }
     };
 
@@ -48,7 +48,7 @@ function RankingContent() {
         <main className={styles.main}>
           <div className={styles.content}>
             <p className={styles.text} style={{ textAlign: 'center' }}>
-              Loading...
+              Cargando...
             </p>
           </div>
         </main>
@@ -74,7 +74,7 @@ function RankingContent() {
     <div className={styles.container}>
       <main className={styles.main}>
         <div className={styles.content}>
-          <h1 className={styles.title}>Leaderboard</h1>
+          <h1 className={styles.title}>Clasificación</h1>
           
           {error && (
             <div style={{ color: '#ff4444', marginBottom: '20px' }}>
@@ -84,7 +84,7 @@ function RankingContent() {
 
           {!rankingData && !error && (
             <p className={styles.text} style={{ textAlign: 'center' }}>
-              No leaderboard data available
+              No hay datos de clasificación disponibles
             </p>
           )}
 
@@ -141,24 +141,24 @@ function RankingContent() {
                         )}
                         {item.highest_level !== undefined && (
                           <span className={`${styles.rankingInline} ${styles.rankingLevelMobile}`}>
-                            <strong>Level:</strong> {item.highest_level}
+                            <strong>Nivel:</strong> {item.highest_level}
                           </span>
                         )}
                       </div>
                       <div className={styles.rankingRight}>
                         {item.total_attempts !== undefined && (
                           <span className={styles.rankingInline}>
-                            <strong>Attempts:</strong> {item.total_attempts}
+                            <strong>Intentos:</strong> {item.total_attempts}
                           </span>
                         )}
                         {item.completed_at && (
                           <span className={styles.rankingInline}>
-                            <strong>Completed at:</strong> {formatTimestamp(item.completed_at)}
+                            <strong>Completado:</strong> {formatTimestamp(item.completed_at)}
                           </span>
                         )}
                         {item.highest_level !== undefined && (
                           <span className={`${styles.rankingInline} ${styles.rankingLevelDesktop}`}>
-                            <strong>Level:</strong> {item.highest_level}
+                            <strong>Nivel:</strong> {item.highest_level}
                           </span>
                         )}
                       </div>
@@ -182,7 +182,7 @@ export default function Ranking() {
         <main className={styles.main}>
           <div className={styles.content}>
             <p className={styles.text} style={{ textAlign: 'center' }}>
-              Loading...
+              Cargando...
             </p>
           </div>
         </main>

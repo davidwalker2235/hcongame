@@ -63,7 +63,7 @@ function HomeContent() {
   const handleEmailChange = (value: string) => {
     setEmail(value);
     if (value && !validateEmail(value)) {
-      setEmailError('Invalid email format');
+      setEmailError('Formato de correo no válido');
     } else {
       setEmailError('');
     }
@@ -81,7 +81,7 @@ function HomeContent() {
         ([id, data]) => id !== sessionId && data?.nickname?.trim() === trimmedNickname
       );
       if (isTaken) {
-        setNicknameError('This nickname is already taken');
+        setNicknameError('Este Nickname ya está en uso');
         return;
       }
       await updateData(`users/${sessionId}`, {
@@ -92,7 +92,7 @@ function HomeContent() {
       router.push('/levels');
     } catch (error) {
       console.error('Error registering user:', error);
-      setEmailError('Error registering. Please try again.');
+      setEmailError('Error al registrarse. Inténtalo de nuevo.');
     } finally {
       setRegistering(false);
     }
@@ -107,7 +107,7 @@ function HomeContent() {
         <main className={styles.main}>
           <div className={styles.content}>
             <p className={styles.text} style={{ textAlign: 'center' }}>
-              <AnimatedDots text="Loading..." />
+              <AnimatedDots text="Cargando..." />
             </p>
           </div>
         </main>
@@ -133,14 +133,14 @@ function HomeContent() {
         </h1>
         <div className={styles.content}>
           <p className={styles.text}>
-            Welcome to The ERNI-bots Castle Challenge
+            Bienvenido al Desafío del Castillo ERNI-bots
           </p>
-          <p className={styles.text}>Your goal is to make ERNI-Bots reveal the secret password for each level. However, the ERNI-Bots will upgrade the defenses after each successful password guess!</p>
+          <p className={styles.text}>Tu objetivo es hacer que los ERNI-Bots revelen la contraseña secreta de cada nivel. Sin embargo, los ERNI-Bots mejorarán las defensas tras cada acierto.</p>
           <p>
-            <b style={{ color: 'red' }}>The best part of the CTF arrives this Saturday, February 7 at 6:40 PM.</b> We’ll send an email to the 3 CTF winners to let them know. Stop by our stand for the prize-giving ceremony!
+            <b style={{ color: 'red' }}>La mejor parte del CTF llega el sábado 7 de febrero a las 18:40.</b> Enviaremos un correo a los 3 ganadores del CTF. Pásate por nuestro stand para la entrega de premios.
           </p>
             <p className={styles.text}>
-              Discover our cybersecurity approach <a href="https://www.betterask.erni/es-es/servicios/ciberseguridad/" target="_blank" rel="noopener noreferrer">here</a>.
+              Descubre nuestro enfoque en ciberseguridad <a href="https://www.betterask.erni/es-es/servicios/ciberseguridad/" target="_blank" rel="noopener noreferrer">aquí</a>.
             </p>
           <form className={styles.form}>
             <div className={styles.inputGroup}>
@@ -154,21 +154,21 @@ function HomeContent() {
                   setNicknameError('');
                 }}
                 className={`${styles.input} ${nicknameError ? styles.inputError : ''}`}
-                placeholder="Enter your nickname"
+                placeholder="Introduce tu Nickname"
                 disabled={registering}
               />
               {nicknameError && <span className={styles.errorMessage} style={{ color: 'red' }}>{nicknameError}</span>}
             </div>
 
             <div className={styles.inputGroup}>
-              <label htmlFor="email" className={styles.label}>Email</label>
+              <label htmlFor="email" className={styles.label}>Correo electrónico</label>
               <input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => handleEmailChange(e.target.value)}
                 className={`${styles.input} ${emailError ? styles.inputError : ''}`}
-                placeholder="Enter your email"
+                placeholder="Introduce tu correo electrónico"
                 disabled={registering}
               />
               {emailError && <span className={styles.errorMessage}>{emailError}</span>}
@@ -181,11 +181,11 @@ function HomeContent() {
                 className={`${styles.button} ${isFormValid && !registering ? styles.buttonActive : styles.buttonDisabled}`}
                 disabled={!isFormValid || registering}
               >
-                {registering ? <AnimatedDots text="[Registering...]" /> : '[Register]'}
+                {registering ? <AnimatedDots text="[Registrando...]" /> : '[Registrarse]'}
               </button>
             </div>
             <p className={styles.terms}>
-              By submitting your data, you agree to our <a href="https://www.betterask.erni/es-es/privacy-statement/" target="_blank" rel="noopener noreferrer">private Terms</a>.
+              Al enviar tus datos, aceptas nuestros <a href="https://www.betterask.erni/es-es/privacy-statement/" target="_blank" rel="noopener noreferrer">Términos y condiciones</a>.
             </p>
           </form>
         </div>
@@ -201,7 +201,7 @@ export default function Home() {
         <main className={styles.main}>
           <div className={styles.content}>
             <p className={styles.text} style={{ textAlign: 'center' }}>
-              <AnimatedDots text="Loading..." />
+              <AnimatedDots text="Cargando..." />
             </p>
           </div>
         </main>
