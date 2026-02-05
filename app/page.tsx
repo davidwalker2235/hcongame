@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./components/page.module.css";
 import { Logo } from "./components/Logo";
-import { useFirebaseDatabase } from "./hooks/useFirebaseDatabase";
 import { useSessionId } from "./hooks/useSessionId";
 import { useUserVerification } from "./hooks/useUserVerification";
 import { useApi } from "./hooks/useApi";
@@ -13,9 +12,8 @@ import { AnimatedDots } from "./components/AnimatedDots";
 function HomeContent() {
   const router = useRouter();
   const { sessionId, isInitialized } = useSessionId();
-  const { read, updateData, loading } = useFirebaseDatabase();
-  const { isVerified, userData } = useUserVerification();
-  const { executeGet } = useApi(sessionId);
+  const { isVerified, userData, loading, errorMessage } = useUserVerification();
+  const { executePost } = useApi(sessionId);
   
   const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
@@ -23,15 +21,11 @@ function HomeContent() {
   const [nicknameError, setNicknameError] = useState('');
   const [registering, setRegistering] = useState(false);
 
-  // Cargar datos existentes si el usuario ya tiene algunos datos pero faltan email/nickname
+  // Cargar datos existentes si el usuario ya tiene nickname
   useEffect(() => {
     if (userData && sessionId) {
-      // Si ya tiene datos pero faltan email o nickname, pre-rellenar los campos si existen
       if (userData.nickname && typeof userData.nickname === 'string' && userData.nickname.trim() !== '') {
         setNickname(userData.nickname);
-      }
-      if (userData.email && typeof userData.email === 'string' && userData.email.trim() !== '') {
-        setEmail(userData.email);
       }
     }
   }, [userData, sessionId]);
@@ -75,28 +69,32 @@ function HomeContent() {
     setRegistering(true);
     setNicknameError('');
     try {
-      const users = await read<Record<string, { nickname?: string }>>('users');
-      if (!users || !users[sessionId]) {
-        router.push('/wrong-access');
+      const response = await executePost(
+        '/signup',
+        {
+          nickname: nickname.trim(),
+          email: email.trim(),
+        }
+      ) as { status?: string } | null;
+
+      if (!response || response.status !== 'ok') {
+        setEmailError('Error en servidor');
         return;
       }
-      const trimmedNickname = nickname.trim();
-      const isTaken = users && Object.entries(users).some(
-        ([id, data]) => id !== sessionId && data?.nickname?.trim() === trimmedNickname
-      );
-      if (isTaken) {
-        setNicknameError('Este Nickname ya está en uso');
-        return;
-      }
-      await updateData(`users/${sessionId}`, {
-        nickname: trimmedNickname,
-        email: email.trim(),
-      });
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       router.push('/levels');
     } catch (error) {
       console.error('Error registering user:', error);
-      setEmailError('Error al registrarse. Inténtalo de nuevo.');
+      if (error && typeof error === 'object' && 'detail' in error && Array.isArray((error as any).detail)) {
+        const detail = (error as any).detail[0];
+        if (detail?.msg) {
+          setEmailError(detail.msg);
+        } else {
+          setEmailError('Error en servidor');
+        }
+      } else {
+        setEmailError('Error en servidor');
+      }
     } finally {
       setRegistering(false);
     }
@@ -122,6 +120,20 @@ function HomeContent() {
   // Si el usuario está verificado (tiene email y nickname), no deberíamos llegar aquí (se redirige)
   if (isVerified === true) {
     return null;
+  }
+
+  if (errorMessage) {
+    return (
+      <div className={styles.container}>
+        <main className={styles.main}>
+          <div className={styles.content}>
+            <p className={styles.text} style={{ textAlign: 'center', color: '#ff4444' }}>
+              {errorMessage}
+            </p>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   // Si no hay sessionId, redirigir a wrong-access

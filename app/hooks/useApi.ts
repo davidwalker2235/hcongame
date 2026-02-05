@@ -62,7 +62,10 @@ export function useApi<T = any>(bearerToken?: string | null): UseApiReturn<T> {
     } catch (err) {
       const apiError = err as ApiError;
       setError(apiError);
-      return null;
+      if (apiError?.status === 401 && typeof window !== "undefined") {
+        window.location.href = "/wrong-access";
+      }
+      throw apiError;
     } finally {
       setLoading(false);
     }
@@ -86,7 +89,10 @@ export function useApi<T = any>(bearerToken?: string | null): UseApiReturn<T> {
     } catch (err) {
       const apiError = err as ApiError;
       setError(apiError);
-      return null;
+      if (apiError?.status === 401 && typeof window !== "undefined") {
+        window.location.href = "/wrong-access";
+      }
+      throw apiError;
     } finally {
       setLoading(false);
     }
@@ -110,7 +116,10 @@ export function useApi<T = any>(bearerToken?: string | null): UseApiReturn<T> {
     } catch (err) {
       const apiError = err as ApiError;
       setError(apiError);
-      return null;
+      if (apiError?.status === 401 && typeof window !== "undefined") {
+        window.location.href = "/wrong-access";
+      }
+      throw apiError;
     } finally {
       setLoading(false);
     }
@@ -133,7 +142,10 @@ export function useApi<T = any>(bearerToken?: string | null): UseApiReturn<T> {
     } catch (err) {
       const apiError = err as ApiError;
       setError(apiError);
-      return null;
+      if (apiError?.status === 401 && typeof window !== "undefined") {
+        window.location.href = "/wrong-access";
+      }
+      throw apiError;
     } finally {
       setLoading(false);
     }
