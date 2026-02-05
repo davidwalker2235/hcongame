@@ -76,6 +76,10 @@ function HomeContent() {
     setNicknameError('');
     try {
       const users = await read<Record<string, { nickname?: string }>>('users');
+      if (!users || !users[sessionId]) {
+        router.push('/wrong-access');
+        return;
+      }
       const trimmedNickname = nickname.trim();
       const isTaken = users && Object.entries(users).some(
         ([id, data]) => id !== sessionId && data?.nickname?.trim() === trimmedNickname

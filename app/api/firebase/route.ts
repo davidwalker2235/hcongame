@@ -48,9 +48,10 @@ export async function POST(request: NextRequest) {
 
     const path = normalizePath(rawPath);
     const isUsersRoot = path === "users";
+    const isLeaderboardRoot = path === "leaderboard";
     const isSelfPath = isUserPath(path, sessionId);
 
-    if (!isUsersRoot && !isSelfPath) {
+    if (!isUsersRoot && !isSelfPath && !isLeaderboardRoot) {
       return NextResponse.json({ error: "Ruta no permitida." }, { status: 403 });
     }
 
@@ -59,6 +60,12 @@ export async function POST(request: NextRequest) {
     }
 
     const adminDb = getAdminDb();
+    if (action !== "read") {
+      const userSnap = await adminDb.ref(`users/${sessionId}`).get();
+      if (!userSnap.exists()) {
+        return NextResponse.json({ error: "Usuario no existe." }, { status: 403 });
+      }
+    }
     const ref = adminDb.ref(path);
 
     switch (action) {
