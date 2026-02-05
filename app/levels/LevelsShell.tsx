@@ -584,7 +584,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
                       1000,
                       () => setResponseAnimationDone(true),
                     ]}
-                    speed={40}
+                    speed={99}
                     wrapper="p"
                     cursor={true}
                     repeat={0}
