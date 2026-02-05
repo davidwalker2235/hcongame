@@ -1,19 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  ref,
-  set,
-  update,
-  remove,
-  get,
-  onValue,
-  off,
-  push,
-  DataSnapshot
-} from 'firebase/database';
-import { database } from '@/app/lib/firebase';
-import { ensureFirebaseAuth } from '@/app/lib/firebaseAuth';
+
+type FirebaseAction = "read" | "write" | "update" | "remove" | "push";
+
+type FirebaseApiResponse<T> = {
+  data?: T;
+  error?: string;
+};
 
 interface UseFirebaseDatabaseReturn {
   // Read operations
@@ -45,6 +39,46 @@ export const useFirebaseDatabase = (): UseFirebaseDatabaseReturn => {
   type SubEntry = { cancelled: boolean; unsubscribe?: () => void };
   const subscriptionsRef = useRef<Map<string, SubEntry>>(new Map());
 
+  const callFirebase = useCallback(async <T = any>(
+    action: FirebaseAction,
+    path: string,
+    payload?: unknown,
+    silent?: boolean
+  ): Promise<T | null> => {
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
+    try {
+      const response = await fetch("/api/firebase", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          action,
+          path,
+          data: payload,
+        }),
+      });
+
+      const json = (await response.json()) as FirebaseApiResponse<T>;
+      if (!response.ok || json.error) {
+        throw new Error(json.error || "Error en Firebase.");
+      }
+      return (json.data ?? null) as T | null;
+    } catch (err) {
+      const nextError = err instanceof Error ? err : new Error("Unknown error");
+      setError(nextError);
+      throw nextError;
+    } finally {
+      if (!silent) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
   // Cleanup subscriptions on unmount
   useEffect(() => {
     return () => {
@@ -59,25 +93,14 @@ export const useFirebaseDatabase = (): UseFirebaseDatabaseReturn => {
    * Read data from a path (one-time read)
    */
   const readOnce = useCallback(async <T = any>(path: string): Promise<T | null> => {
-    await ensureFirebaseAuth();
     try {
-      setLoading(true);
-      setError(null);
-      const dbRef = ref(database, path);
-      const snapshot = await get(dbRef);
-      
-      if (snapshot.exists()) {
-        return snapshot.val() as T;
-      }
-      return null;
+      return await callFirebase<T>("read", path);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error');
       setError(error);
       throw error;
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  }, [callFirebase]);
 
   /**
    * Read data from a path (alias for readOnce)
@@ -90,78 +113,54 @@ export const useFirebaseDatabase = (): UseFirebaseDatabaseReturn => {
    * Write data to a path (replaces existing data)
    */
   const write = useCallback(async <T = any>(path: string, data: T): Promise<void> => {
-    await ensureFirebaseAuth();
     try {
-      setLoading(true);
-      setError(null);
-      const dbRef = ref(database, path);
-      await set(dbRef, data);
+      await callFirebase("write", path, data);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error');
       setError(error);
       throw error;
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  }, [callFirebase]);
 
   /**
    * Update specific fields in a path (merges with existing data)
    */
   const updateData = useCallback(async (path: string, data: Record<string, any>): Promise<void> => {
-    await ensureFirebaseAuth();
     try {
-      setLoading(true);
-      setError(null);
-      const dbRef = ref(database, path);
-      await update(dbRef, data);
+      await callFirebase("update", path, data);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error');
       setError(error);
       throw error;
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  }, [callFirebase]);
 
   /**
    * Remove data from a path
    */
   const removeData = useCallback(async (path: string): Promise<void> => {
-    await ensureFirebaseAuth();
     try {
-      setLoading(true);
-      setError(null);
-      const dbRef = ref(database, path);
-      await remove(dbRef);
+      await callFirebase("remove", path);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error');
       setError(error);
       throw error;
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  }, [callFirebase]);
 
   /**
    * Push data to a path (creates a new child with auto-generated key)
    */
   const pushData = useCallback(async <T = any>(path: string, data: T): Promise<string | null> => {
-    await ensureFirebaseAuth();
     try {
-      setLoading(true);
-      setError(null);
-      const dbRef = ref(database, path);
-      const newRef = await push(dbRef, data);
-      return newRef.key;
+      const result = await callFirebase<{ key?: string }>("push", path, data);
+      return result?.key ?? null;
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error');
       setError(error);
       throw error;
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  }, [callFirebase]);
 
   /**
    * Subscribe to real-time changes at a path
@@ -175,38 +174,30 @@ export const useFirebaseDatabase = (): UseFirebaseDatabaseReturn => {
     const entry: SubEntry = { cancelled: false };
     subscriptionsRef.current.set(path, entry);
 
-    ensureFirebaseAuth()
-      .then(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const poll = async () => {
+      if (entry.cancelled) return;
+      try {
+        const value = await callFirebase<T>("read", path, undefined, true);
         if (entry.cancelled) return;
-        const dbRef = ref(database, path);
-        const unsubscribe = onValue(
-          dbRef,
-          (snapshot: DataSnapshot) => {
-            if (snapshot.exists()) {
-              const value = snapshot.val() as T;
-              callback(value);
-              setData(value);
-            } else {
-              callback(null);
-              setData(null);
-            }
-          },
-          (err) => {
-            const error = err instanceof Error ? err : new Error('Unknown error');
-            setError(error);
-            callback(null);
-          }
-        );
-        entry.unsubscribe = () => {
-          off(dbRef);
-          unsubscribe();
-        };
-      })
-      .catch((err) => {
-        const error = err instanceof Error ? err : new Error('Unknown error');
-        setError(error);
+        callback(value ?? null);
+        setData(value ?? null);
+      } catch (err) {
+        const nextError = err instanceof Error ? err : new Error('Unknown error');
+        setError(nextError);
         callback(null);
-      });
+      } finally {
+        if (!entry.cancelled) {
+          timeoutId = setTimeout(poll, 2000);
+        }
+      }
+    };
+
+    poll();
+
+    entry.unsubscribe = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
 
     return () => {
       entry.cancelled = true;
