@@ -188,7 +188,7 @@ export const useFirebaseDatabase = (): UseFirebaseDatabaseReturn => {
         callback(null);
       } finally {
         if (!entry.cancelled) {
-          timeoutId = setTimeout(poll, 2000);
+          timeoutId = setTimeout(poll, 30000);
         }
       }
     };
