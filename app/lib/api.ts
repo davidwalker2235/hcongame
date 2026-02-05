@@ -94,7 +94,7 @@ export async function post<T = any>(
       }
 
       const error: ApiError = {
-        message: errorData?.detail 
+        message: errorData?.detail
           ? errorData.detail.map((d: any) => d.msg).join(', ')
           : `HTTP error! status: ${response.status}`,
         status: response.status,
@@ -151,7 +151,7 @@ export async function put<T = any>(
       }
 
       const error: ApiError = {
-        message: errorData?.detail 
+        message: errorData?.detail
           ? errorData.detail.map((d: any) => d.msg).join(', ')
           : `HTTP error! status: ${response.status}`,
         status: response.status,

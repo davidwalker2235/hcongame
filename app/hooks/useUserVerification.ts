@@ -2,24 +2,23 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useFirebaseDatabase } from './useFirebaseDatabase';
 import { useSessionId } from './useSessionId';
 import { useApi } from './useApi';
 
-interface ChallengeResponse {
-  level: number;
-  difficulty: string;
-  story: string;
+interface AuthResponse {
+  level: number | "new";
+  nickname?: string | null;
 }
 
 export const useUserVerification = () => {
   const router = useRouter();
   const pathname = usePathname();
   const { sessionId, isInitialized } = useSessionId();
-  const { read, updateData, loading } = useFirebaseDatabase();
-  const { executeGet } = useApi<ChallengeResponse>(sessionId || undefined);
+  const { executeGet, loading } = useApi<AuthResponse>(sessionId || undefined);
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [userData, setUserData] = useState<any>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [currentLevel, setCurrentLevel] = useState<number | null>(null);
   const previousIdRef = useRef<string | null>(null);
   const isVerifyingRef = useRef(false);
   const hasRedirectedRef = useRef(false);
@@ -32,6 +31,8 @@ export const useUserVerification = () => {
     if (previousIdRef.current !== sessionId) {
       setIsVerified(null);
       setUserData(null);
+      setCurrentLevel(null);
+      setErrorMessage(null);
       previousIdRef.current = sessionId;
       hasRedirectedRef.current = false;
     }
@@ -52,74 +53,41 @@ export const useUserVerification = () => {
       isVerifyingRef.current = true;
 
       try {
-        const data = await read(`users/${sessionId}`);
-        
-        // Si el ID no existe en Firebase, redirigir a wrong-access
-        if (!data) {
-          if (pathname !== '/wrong-access') {
-            hasRedirectedRef.current = true;
-            router.push('/wrong-access');
-          }
+        const authResponse = await executeGet(`/auth`);
+        if (!authResponse) {
+          setErrorMessage("Error en servidor");
           setIsVerified(false);
           return;
         }
 
-        // El ID existe, verificar si tiene email y nickname
-        const hasEmail = data.email && typeof data.email === 'string' && data.email.trim() !== '';
-        const hasNickname = data.nickname && typeof data.nickname === 'string' && data.nickname.trim() !== '';
-
-        if (hasEmail && hasNickname) {
-          // Tiene email y nickname, verificar challenge actual
-          setUserData(data);
-          setIsVerified(true);
-          
-          // Llamar a la API para obtener el challenge actual
-          try {
-            const challengeResponse = await executeGet(`/challenge/0`);
-            
-            if (challengeResponse && challengeResponse.level !== undefined) {
-              // Comparar el level de la API con el currentLevel del usuario
-              const currentLevel = data.currentLevel ?? null;
-              
-              if (challengeResponse.level !== currentLevel) {
-                // Actualizar el currentLevel en Firebase
-                await updateData(`users/${sessionId}`, {
-                  currentLevel: challengeResponse.level
-                });
-                
-                // Actualizar también el userData local
-                setUserData({
-                  ...data,
-                  currentLevel: challengeResponse.level
-                });
-              }
-            }
-          } catch (error) {
-            // Si hay error en la llamada a la API, continuar sin actualizar
-            console.error('Error fetching challenge:', error);
-          }
-          
-          // Si estamos en la página principal o wrong-access, redirigir a levels
-          if (pathname === '/' || pathname === '/wrong-access') {
-            hasRedirectedRef.current = true;
-            router.push('/levels');
-          }
-        } else {
-          // No tiene email o nickname, redirigir a página principal para registro
-          setUserData(data);
+        setUserData({ nickname: authResponse.nickname ?? null });
+        if (authResponse.level === "new" || authResponse.level === 0) {
           setIsVerified(false);
-          
           if (pathname !== '/') {
             hasRedirectedRef.current = true;
             router.push('/');
           }
+          return;
+        }
+
+        const levelNumber = Number(authResponse.level);
+        if (!Number.isFinite(levelNumber)) {
+          setErrorMessage("Error en servidor");
+          setIsVerified(false);
+          return;
+        }
+
+        setCurrentLevel(levelNumber);
+        setIsVerified(true);
+
+        if (pathname === '/' || pathname === '/wrong-access') {
+          hasRedirectedRef.current = true;
+          router.push('/levels');
         }
       } catch (error) {
         console.error('Error verifying user:', error);
-        // En caso de error, redirigir a wrong-access
-        if (pathname !== '/wrong-access') {
-          hasRedirectedRef.current = true;
-          router.push('/wrong-access');
+        if (error && typeof error === "object" && "status" in error && (error as any).status !== 401) {
+          setErrorMessage("Error en servidor");
         }
         setIsVerified(false);
       } finally {
@@ -128,12 +96,14 @@ export const useUserVerification = () => {
     };
 
     verifyUser();
-  }, [sessionId, isInitialized, read, updateData, executeGet, router, pathname]);
+  }, [sessionId, isInitialized, executeGet, router, pathname]);
 
   return {
     id: sessionId,
     isVerified,
     userData,
     loading: loading || !isInitialized,
+    errorMessage,
+    currentLevel,
   };
 };

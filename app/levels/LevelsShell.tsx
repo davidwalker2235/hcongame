@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "../components/page.module.css";
-import { useFirebaseDatabase } from "../hooks/useFirebaseDatabase";
 import { useUserVerification } from "../hooks/useUserVerification";
 import { TypeAnimation } from "react-type-animation";
 import { LevelTabs } from "./components/LevelTabs";
@@ -63,13 +62,19 @@ type LevelsShellProps = {
 };
 
 export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
-  const { isVerified, userData, loading, id: sessionId } = useUserVerification();
-  const { subscribe, updateData } = useFirebaseDatabase();
+  const {
+    isVerified,
+    userData,
+    loading,
+    id: sessionId,
+    currentLevel: authLevel,
+    errorMessage,
+  } = useUserVerification();
   const { executeGet, loading: apiLoading, error: apiError } = useApi<ChallengeResponse>(sessionId);
   const { executePost: executePostAsk, loading: askLoading, error: askError, reset: resetAskError } = useApi<AskResponse>(sessionId);
   const { executePost: executePostVerify, loading: verifyLoading, error: verifyError, reset: resetVerifyError } = useApi<VerifyResponse>(sessionId);
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
-  const [liveUserData, setLiveUserData] = useState<any>(userData ?? null);
+  const [currentLevel, setCurrentLevel] = useState<number>(authLevel ?? 1);
   const didBootstrapRef = useRef(false);
   const [skipAnimation, setSkipAnimation] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -92,11 +97,8 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
 
   const { levelNote, setLevelNote, animationDone, setAnimationDone } = useLevelNote(selectedLevel ?? 1);
 
-  const currentLevelFromData = useMemo(() => {
-    if (!liveUserData?.currentLevel) return 1;
-    return clampLevel(Number(liveUserData.currentLevel));
-  }, [liveUserData]);
-  const isGameFinished = Boolean(liveUserData?.gameFinished) || gameFinishedLocal;
+  const normalizedCurrentLevel = clampLevel(Number(currentLevel) || 1);
+  const isGameFinished = normalizedCurrentLevel >= LEVEL_COUNT || gameFinishedLocal;
 
   /** Al cambiar de tab: si es un nivel ya pasado (inferior al actual), solo cambiar de tab sin llamar a la API. Si es el nivel actual o primera visita, sincronizar con /challenge/0. */
   const handleSelectLevel = async (level: number) => {
@@ -104,7 +106,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
       setSelectedLevel(level);
       return;
     }
-    if (level < currentLevelFromData) {
+    if (level < normalizedCurrentLevel) {
       setSelectedLevel(level);
       return;
     }
@@ -113,22 +115,18 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
       const response = await executeGet(`/challenge/0`);
       if (response == null) return;
       const levelFromApi = clampLevel(typeof response.level === "number" ? response.level : 1);
-      if (levelFromApi !== currentLevelFromData) {
-        await updateData(`users/${sessionId}`, { currentLevel: levelFromApi });
-      }
+      setCurrentLevel(levelFromApi);
       setSelectedLevel(levelFromApi);
     } catch (error) {
       console.error("Error syncing level from API:", error);
     }
   };
 
-  useEffect(() => void setLiveUserData(userData ?? null), [userData]);
-
   useEffect(() => {
-    if (!sessionId) return;
-    const unsubscribe = subscribe(`users/${sessionId}`, (data) => setLiveUserData(data ?? null));
-    return () => unsubscribe();
-  }, [sessionId, subscribe]);
+    if (authLevel == null) return;
+    const nextLevel = clampLevel(Number(authLevel) || 1);
+    setCurrentLevel(nextLevel);
+  }, [authLevel]);
 
   // Solo resetear cuando la sesión CAMBIA (otro usuario), no en cada remount (Strict Mode hace 2 mounts).
   useEffect(() => {
@@ -166,9 +164,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
         if (response == null) return;
         const levelFromApi = typeof response.level === "number" ? response.level : 1;
         const levelFinal = clampLevel(levelFromApi);
-        if (levelFinal !== currentLevelFromData) {
-          await updateData(`users/${sessionId}`, { currentLevel: levelFinal });
-        }
+        setCurrentLevel(levelFinal);
         setSelectedLevel(levelFinal);
       } catch (error) {
         console.error("Error bootstrap level 0:", error);
@@ -178,16 +174,16 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     };
 
     bootstrap();
-  }, [isVerified, sessionId, executeGet, currentLevelFromData, updateData, isGameFinished]);
+  }, [isVerified, sessionId, executeGet, normalizedCurrentLevel, isGameFinished]);
 
   // Al volver a esta ruta (remount), si ya se hizo bootstrap para esta sesión,
-  // selectedLevel queda null porque el estado se reinicia. Restaurar desde currentLevelFromData.
+  // selectedLevel queda null porque el estado se reinicia. Restaurar desde el nivel actual.
   useEffect(() => {
     if (!isVerified || !sessionId) return;
     if (lastBootstrapSessionId !== sessionId) return;
     if (selectedLevel !== null) return;
-    setSelectedLevel(currentLevelFromData);
-  }, [isVerified, sessionId, selectedLevel, currentLevelFromData]);
+    setSelectedLevel(normalizedCurrentLevel);
+  }, [isVerified, sessionId, selectedLevel, normalizedCurrentLevel]);
 
   // Resetear skipAnimation cuando cambia el nivel
   useEffect(() => {
@@ -228,7 +224,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     }
 
     const stored = getStoredLevelStory(selectedLevel);
-    const isCompletedLevel = selectedLevel < currentLevelFromData;
+    const isCompletedLevel = selectedLevel < normalizedCurrentLevel;
 
     if (stored) {
       setLevelStory(stored);
@@ -267,7 +263,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     };
 
     fetchLevelData();
-  }, [selectedLevel, isVerified, executeGet, currentLevelFromData, isGameFinished, setAnimationDone]);
+  }, [selectedLevel, isVerified, executeGet, normalizedCurrentLevel, isGameFinished, setAnimationDone]);
 
   // Establecer animatingText cuando levelStory cambia y la animación no está en progreso
   useEffect(() => {
@@ -386,24 +382,14 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
       );
       
       // Si la respuesta es correcta, actualizar el currentLevel en Firebase y mostrar mensaje
-      if (response?.correct === true && response?.level) {
-        const currentLevel = response.level;
-        if (currentLevel >= LEVEL_COUNT) {
-          await updateData(`users/${sessionId}`, {
-            currentLevel: LEVEL_COUNT,
-            gameFinished: true,
-          });
+      if (response?.correct === true && response?.level !== undefined) {
+        const responseLevel = Number(response.level);
+        const nextLevel = clampLevel(responseLevel + 1);
+        setCurrentLevel(nextLevel);
+        setSelectedLevel(nextLevel);
+        if (nextLevel >= LEVEL_COUNT) {
           setGameFinishedLocal(true);
-          setIsCorrect(true);
-          setCheckMessage(null);
-          return;
         }
-
-        const newLevel = Math.min(currentLevel + 1, LEVEL_COUNT);
-        await updateData(`users/${sessionId}`, {
-          currentLevel: newLevel
-        });
-
         setIsCorrect(true);
         setCheckMessage(null);
       } else if (response?.correct === false) {
@@ -429,6 +415,20 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     );
   }
 
+  if (errorMessage) {
+    return (
+      <div className={styles.container}>
+        <main className={styles.main}>
+          <div className={styles.content}>
+            <p className={styles.text} style={{ textAlign: "center", color: "#ff4444" }}>
+              {errorMessage}
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (selectedLevel === null) {
     return (
       <div className={styles.container}>
@@ -443,7 +443,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
     );
   }
 
-  const isCompletedLevel = selectedLevel !== null && selectedLevel < currentLevelFromData;
+  const isCompletedLevel = selectedLevel !== null && selectedLevel < normalizedCurrentLevel;
 
   // Usar el story de la API si está disponible, sino usar el texto por defecto
   const textToDisplay = levelStory ?? levelTexts[selectedLevel] ?? "Cargando contenido del nivel...";
@@ -462,7 +462,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
         <div className={styles.content}>
           <LevelTabs
             levelCount={LEVEL_COUNT}
-            currentLevel={currentLevelFromData}
+            currentLevel={normalizedCurrentLevel}
             selectedLevel={selectedLevel ?? 1}
             onSelect={handleSelectLevel}
           />
