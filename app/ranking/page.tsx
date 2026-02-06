@@ -22,17 +22,24 @@ const formatTimestamp = (value: string | number) => {
 
 function RankingContent() {
   const { isVerified, loading: verificationLoading, id: sessionId, userData } = useUserVerification();
-  const { subscribe, loading: firebaseLoading } = useFirebaseDatabase();
+  const { read, loading: firebaseLoading } = useFirebaseDatabase();
   const [rankingData, setRankingData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isVerified) return;
-    const unsubscribe = subscribe('leaderboard', (data) => {
-      setRankingData(data);
-    });
-    return () => unsubscribe();
-  }, [isVerified, subscribe]);
+    const fetchRanking = async () => {
+      try {
+        const data = await read('leaderboard');
+        setRankingData(data);
+      } catch (err) {
+        console.error('Error fetching leaderboard:', err);
+        setError('Error al cargar la clasificación');
+      }
+    };
+
+    fetchRanking();
+  }, [isVerified, read]);
 
   if (verificationLoading || firebaseLoading || isVerified === null || isVerified === false) {
     return (
