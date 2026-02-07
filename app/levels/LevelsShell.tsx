@@ -98,7 +98,7 @@ export const LevelsShell = ({ levelTexts }: LevelsShellProps) => {
   const { levelNote, setLevelNote, animationDone, setAnimationDone } = useLevelNote(selectedLevel ?? 1);
 
   const normalizedCurrentLevel = clampLevel(Number(currentLevel) || 1);
-  const isGameFinished = normalizedCurrentLevel >= LEVEL_COUNT || gameFinishedLocal;
+  const isGameFinished = gameFinishedLocal;
 
   /** Al cambiar de tab: si es un nivel ya pasado (inferior al actual), solo cambiar de tab sin llamar a la API. Si es el nivel actual o primera visita, sincronizar con /challenge/0. */
   const handleSelectLevel = async (level: number) => {
